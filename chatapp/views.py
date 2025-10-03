@@ -1283,6 +1283,8 @@ def group_events(request):
     events = analyze_group_events(filtered_messages)
     event_counts = get_event_counts(events)
     top_removers = get_top_removers(events)
+    # Convert tuple format to dictionary format for frontend
+    top_removers = [{'user': user, 'count': count} for user, count in top_removers]
     
     # Get detailed lists for each event type
     added_list = get_detailed_event_list(events, 'added')
@@ -1663,27 +1665,7 @@ def get_detailed_event_list(events, event_type):
     detailed_list.sort(key=lambda x: x['timestamp'], reverse=True)
     return detailed_list
 
-def get_top_removers(events):
-    """Get top users who removed others"""
-    # Use the events dictionary directly (imported from group_event.py)
-    removed_events = events.get('removed', [])
-    remover_counts = {}
-    
-    for event in removed_events:
-        remover = event.get('remover', 'Unknown')
-        if remover in remover_counts:
-            remover_counts[remover] += 1
-        else:
-            remover_counts[remover] = 1
-    
-    # Sort by count and return top 5
-    sorted_removers = sorted(remover_counts.items(), key=lambda x: x[1], reverse=True)
-    return [{'user': user, 'count': count} for user, count in sorted_removers[:5]]
 
-@csrf_exempt
-@require_http_methods(["POST"])
-@csrf_exempt
-@require_http_methods(["POST"])
 def sentiment(request):
     try:
         data = json.loads(request.body)
@@ -1732,9 +1714,21 @@ def sentiment(request):
         if 'sentiment_breakdown' not in result:
             result['sentiment_breakdown'] = result.get('overall_sentiment', {'positive': 0, 'neutral': 0, 'negative': 0})
         
+        # Ensure sentiment_breakdown is a dictionary
+        if not isinstance(result.get('sentiment_breakdown', {}), dict):
+            result['sentiment_breakdown'] = {'positive': 0, 'neutral': 0, 'negative': 0}
+        else:
+            # Make sure all keys exist
+            sb = result['sentiment_breakdown']
+            result['sentiment_breakdown'] = {
+                'positive': sb.get('positive', 0),
+                'neutral': sb.get('neutral', 0),
+                'negative': sb.get('negative', 0)
+            }
+        
         # Add total count for frontend display
         total_count = sum(result['sentiment_breakdown'].values())
-        result['total_analyzed'] = total_count
+        result['total_analyzed'] = str(total_count)
         
         return JsonResponse(result)
         
@@ -2011,7 +2005,7 @@ def export_data(request):
         events = analyze_group_events(filtered_messages)
         export_data['events'] = {
             'event_counts': get_event_counts(events),
-            'top_removers': get_top_removers(events)
+            'top_removers': [{'user': user, 'count': count} for user, count in get_top_removers(events)]
         }
     
     if 'messages' in export_features or 'all' in export_features:
@@ -2129,12 +2123,3 @@ def debug_groups(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({"error": f"Internal server error: {str(e)}"}, status=500)
-
-
-def health_check(request):
-    """Health check endpoint for Render deployment"""
-    return JsonResponse({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'service': 'whatsapp-analytics'
-    })
