@@ -1,61 +1,23 @@
 import re
 from datetime import datetime, timedelta
 import google.generativeai as genai
-<<<<<<< HEAD
-from dotenv import load_dotenv
-import os
-import time
-import logging
-from django.conf import settings
-from .utils import filter_messages_by_date, parse_timestamp
-
-load_dotenv()
-=======
 from django.conf import settings
 import logging
 from typing import Optional
 import os
+import requests
 
 from .utils import parse_timestamp
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Global model variable
-<<<<<<< HEAD
-model = None
-
-def initialize_gemini_model():
-    """Initialize the Gemini model with proper error handling"""
-    global model
-    
-    # Get API key
-    api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not found in environment or settings")
-        return False
-    
-    try:
-        # Configure Gemini AI (using direct module access to avoid linter errors)
-        genai.configure(api_key=api_key, client_options={"client_class": genai.ClientOptions})  # type: ignore
-        
-        # Initialize the model with fallback
-        try:
-            model = genai.GenerativeModel('gemini-2.5-flash')  # type: ignore
-        except Exception as e:
-            logger.warning(f"Could not initialize gemini-2.5-flash, falling back to gemini-2.0-flash: {e}")
-            try:
-                model = genai.GenerativeModel('gemini-2.0-flash')  # type: ignore
-            except Exception as e2:
-                logger.warning(f"Could not initialize gemini-2.0-flash, falling back to gemini-flash-latest: {e2}")
-                try:
-                    model = genai.GenerativeModel('gemini-flash-latest')  # type: ignore
-                except Exception as e3:
-                    logger.warning(f"Could not initialize gemini-flash-latest, falling back to gemini-pro-latest: {e3}")
-                    model = genai.GenerativeModel('gemini-pro-latest')  # type: ignore
-=======
 model: Optional[genai.GenerativeModel] = None
+
+# Google Gemini API configuration
+MODEL_NAME = "gemini-1.5-pro"
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}/generateContent"
 
 def initialize_gemini_model():
     """Initialize the Gemini AI model with proper configuration"""
@@ -86,23 +48,17 @@ def initialize_gemini_model():
                 except Exception as e3:
                     logger.warning(f"Could not initialize gemini-flash-latest, falling back to gemini-pro-latest: {e3}")
                     model = genai.GenerativeModel('gemini-pro-latest')
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         
         return True
     except Exception as e:
         logger.error(f"Failed to initialize Gemini model: {e}")
         return False
 
-<<<<<<< HEAD
-# Initialize the model when module is loaded
-initialize_gemini_model()
-=======
 # Initialize the model when module is loaded, but don't fail if it doesn't work
 try:
     initialize_gemini_model()
 except Exception as e:
     logger.warning(f"Failed to initialize Gemini model on module load: {e}")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 def generate_fallback_summary(messages):
     """Generate structured summary with actual message content when AI is unavailable"""
@@ -198,694 +154,127 @@ def generate_fallback_summary(messages):
     if user_count > 1 and conversation_snippets:
         summary_parts.append(f"**SOCIAL DYNAMICS**: Active interaction among {user_count} participants with meaningful exchanges")
         if len(conversation_snippets) >= 2:
-            summary_parts.append(f"Sample interaction: {conversation_snippets[0]}")
-    elif user_count > 1:
-        summary_parts.append(f"**SOCIAL DYNAMICS**: Group interaction among {user_count} participants")
-    else:
-        summary_parts.append("**SOCIAL DYNAMICS**: Individual activity only")
+            # Show actual conversation examples
+            summary_parts.append(f"- Example interaction: {conversation_snippets[0]}")
+            if len(conversation_snippets) > 1:
+                summary_parts.append(f"- Follow-up: {conversation_snippets[1]}")
     
-    return '\n'.join(summary_parts)
-
-def generate_with_gemini(prompt):
-    """Generate content using Google Gemini AI SDK"""
-    global model
-    
-<<<<<<< HEAD
-    # Check if model is available
-    if not model:
-        # Try to reinitialize
-        if not initialize_gemini_model():
-            return "API_ERROR"
-    
-    if not model:
-=======
-    # Check if model is available, try to reinitialize if not
-    if not model:
-        if not initialize_gemini_model():
-            logger.warning("Failed to initialize Gemini model, using fallback")
-            return "API_ERROR"
-    
-    # If still no model, use fallback
-    if not model:
-        logger.warning("No Gemini model available, using fallback")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-        return "API_ERROR"
-        
-    try:
-        # Generate content with proper configuration
-        response = model.generate_content(prompt)
-        # Ensure we return a string
-        if hasattr(response, 'text'):
-            return str(response.text)
-        else:
-            return str(response)
-    except Exception as e:
-        logger.error(f"Gemini API error: {e}")
-        # Check if it's a quota exceeded error
-        error_str = str(e).lower()
-        if "429" in error_str or "quota" in error_str or "limit" in error_str:
-            return "QUOTA_EXCEEDED"
-        return "API_ERROR"
-
-# Using parse_timestamp from utils.py
+    return "\n".join(summary_parts)
 
 def generate_total_summary(messages):
+    """Generate a comprehensive summary of all messages"""
     if not messages:
-        return "No messages found in the selected date range."
+        return "No messages to summarize."
     
-<<<<<<< HEAD
-=======
-    # Limit message count to prevent memory issues (more aggressive limit)
-    max_messages = 200
-    if len(messages) > max_messages:
-        messages = messages[:max_messages]
+    # Filter out system messages
+    filtered_messages = []
+    for msg in messages:
+        message_lower = msg['message'].lower()
+        if not any(term in message_lower for term in ['media omitted', 'security code changed', 'tap to learn more', 'this message was deleted']):
+            filtered_messages.append(msg)
     
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-    chat_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in messages])
+    if not filtered_messages:
+        return "No meaningful messages to summarize."
     
-    try:
-        prompt = "Generate a brief summary in 3-4 bullet points. Focus only on the most important topics and key events. Keep it concise and easy to understand. Use **bold** for important terms, *italic* for emphasis, and <span style='color:red'>red text</span> for critical information.\n\n" + chat_text
-        response = generate_with_gemini(prompt)
-        
-        # Check if API quota exceeded or error occurred
-        if response == "QUOTA_EXCEEDED":
-            return generate_fallback_summary(messages)
-        elif response == "API_ERROR":
-            return "Summary temporarily unavailable due to technical issues."
-        else:
-            return response
-    except Exception as e:
-        return f"Error generating summary: {str(e)}"
+    # Use AI if available
+    if model:
+        try:
+            prompt = f"""
+            Please provide a comprehensive summary of the following WhatsApp chat messages.
+            Include:
+            1. Overall activity level
+            2. Key participants and their activity
+            3. Main topics discussed
+            4. Important events or decisions
+            5. Overall sentiment
+            
+            Messages:
+            """
+            
+            # Add messages to prompt (limit to avoid token limits)
+            for msg in filtered_messages[:100]:  # Limit to 100 messages
+                prompt += f"\n{msg['timestamp']} - {msg['sender']}: {msg['message']}"
+            
+            response = model.generate_content(prompt)
+            if response.text:
+                return response.text
+            
+        except Exception as e:
+            logger.warning(f"AI summary failed: {e}")
+    
+    # Fallback to structured summary
+    return generate_fallback_summary(filtered_messages)
 
 def generate_user_messages(messages):
-    """Generate enhanced user messages with meaningful content and timestamps"""
+    """Generate a summary of messages grouped by user"""
     if not messages:
-        return []
+        return {}
     
-    # Filler words to remove
-    filler_words = {
-        'ok', 'okay', 'okk', 'okkkk', 'hmm', 'hmmm', 'yes', 'yeah', 'yep', 'yup', 
-        'no', 'nope', 'ha', 'haha', 'lol', 'lmao', 'hehe', 'hi', 'hello', 'hey', 
-        'bye', 'byee', 'thanks', 'thank', 'welcome', 'sure', 'fine', 'good', 
-        'nice', 'great', 'cool', 'awesome', 'alright', 'right', 'correct'
-    }
-    
-    # System message patterns to exclude
-    system_message_patterns = [
-        'security code', 'tap to learn more', 'changed the subject', 'added', 'removed',
-        'left the group', 'joined using', 'created group', 'media omitted', 
-        'this message was deleted', 'changed this group', 'end-to-end encrypted'
-    ]
-    
-    user_messages = []
-    user_topics = {}  # Track topics per user
-    
+    user_messages = {}
     for msg in messages:
-        dt = parse_timestamp(msg['timestamp'])
-        if dt:
-            formatted_datetime = dt.strftime('%d %b %Y, %I:%M %p')
-        else:
-            formatted_datetime = msg['timestamp']
-        
-        user = msg['sender']
-        message_text = msg['message'].strip()
-        
-        # Skip system messages more comprehensively
-        is_system_message = any(pattern in message_text.lower() for pattern in system_message_patterns)
-        if is_system_message:
-            continue
-            
-        # Clean message by removing filler words
-        words = message_text.split()
-        cleaned_words = []
-        for word in words:
-            # Remove punctuation for comparison but keep in display
-            word_clean = word.lower().strip('.,!?;:')
-            if word_clean not in filler_words and len(word_clean) > 1:
-                cleaned_words.append(word)
-        
-        # Only include messages with substantial content
-        if len(cleaned_words) >= 2 or len(message_text) >= 15:
-            cleaned_message = ' '.join(cleaned_words) if cleaned_words else message_text
-            
-            # Format message content for better readability
-            formatted_message = format_message_content(cleaned_message)
-            
-            # Extract topics for this user
-            if user not in user_topics:
-                user_topics[user] = set()
-            
-            # Simple topic extraction
-            significant_words = [w.lower() for w in cleaned_words if len(w) > 4 and w.isalpha()]
-            user_topics[user].update(significant_words[:3])  # Add first 3 significant words
-            
-            user_messages.append({
-                'sender': user,
-                'cleaned_message': formatted_message,
-                'formatted_datetime': formatted_datetime,
-                'original_message': message_text,
-                'message_length': len(formatted_message)
-            })
-    
-    # Add topics to each message (dynamically adjust based on content)
-    for msg in user_messages:
-        user = msg['sender']
-        msg['topics'] = list(user_topics.get(user, set()))[:min(7, max(3, len(user_topics.get(user, set()))))]  # Dynamic limit based on content
-    
-    # Sort by timestamp (most recent first)
-    user_messages.sort(key=lambda x: x['formatted_datetime'], reverse=True)
+        sender = msg['sender']
+        if sender not in user_messages:
+            user_messages[sender] = []
+        user_messages[sender].append(msg)
     
     return user_messages
 
-def format_message_content(message):
-    """Format message content for better readability with bullet points"""
-    if not message:
-        return message
-    
-    # Remove escape characters
-    message = message.replace('\\n', '\n').replace('\\t', ' ').replace(r'\[', '[').replace(r'\]', ']')
-    message = re.sub(r'\\(.)', r'\1', message)  # Remove backslashes before special characters
-    
-    # If message contains structured content, format it with bullet points
-    if any(indicator in message for indicator in ['*', '**', '१)', '२)', 'विषय', 'दिनांक']):
-        # Split by common delimiters and create bullet points
-        lines = message.replace('*', '').split()
-        formatted_lines = []
-        current_line = []
-        
-        for word in lines:
-            # Check for numbered points
-            if word.startswith(('१)', '२)', '३)', '४)', '५)', '1)', '2)', '3)', '4)', '5)')):
-                if current_line:
-                    formatted_lines.append(' '.join(current_line))
-                    current_line = []
-                formatted_lines.append(f"• {word}")
-            elif word in ['विषय:-', 'दिनांक-', 'वार-', 'टिप-']:
-                if current_line:
-                    formatted_lines.append(' '.join(current_line))
-                    current_line = []
-                formatted_lines.append(f"• {word}")
-            else:
-                current_line.append(word)
-        
-        if current_line:
-            formatted_lines.append(' '.join(current_line))
-        
-        # Join with proper line breaks
-        return ' '.join(formatted_lines) if len(formatted_lines) <= 3 else '\n'.join(formatted_lines[:5]) + '...'
-    
-    # For regular messages, just clean up extra spaces
-    return ' '.join(message.split())
-
 def get_users_in_messages(messages):
-    if not messages:
-        return []
+    """Get a list of all users in the messages"""
     users = set()
     for msg in messages:
         users.add(msg['sender'])
-    
     return sorted(list(users))
 
 def generate_user_messages_for_user(messages, user):
-    if not messages:
-        return []
+    """Generate messages for a specific user"""
     user_messages = []
     for msg in messages:
         if msg['sender'] == user:
-            dt = parse_timestamp(msg['timestamp'])
-            if dt:
-                time_str = dt.strftime('%d %b %Y, %I:%M %p')
-            else:
-                time_str = msg['timestamp']
-            
-            user_messages.append({
-                'timestamp': time_str,
-                'message': msg['message']
-            })
-    
+            user_messages.append(msg)
     return user_messages
-
-def count_user_messages(messages, user):
-    """Count the number of messages sent by a specific user"""
-    if not messages or not user:
-        return 0
-    
-    count = 0
-    for msg in messages:
-        if msg['sender'] == user:
-            count += 1
-    
-    return count
-
-def filter_messages_by_time_range(messages, start_time_str=None, end_time_str=None):
-    """Filter messages by time range (simple implementation for fallback)"""
-    if not messages:
-        return []
-    
-    # For fallback purposes, we'll do a simple string-based filtering
-    # In a production environment, you would want to parse timestamps properly
-    filtered_messages = []
-    
-    for msg in messages:
-        timestamp = msg['timestamp'].lower()
-        
-        # If no time range specified, include all messages
-        if not start_time_str and not end_time_str:
-            filtered_messages.append(msg)
-            continue
-        
-        # Simple time range check (this is a basic implementation)
-        include_message = True
-        
-        if start_time_str and start_time_str in timestamp:
-            # This is a very basic check - in practice, you'd want proper datetime parsing
-            filtered_messages.append(msg)
-        elif end_time_str and end_time_str in timestamp:
-            # This is a very basic check - in practice, you'd want proper datetime parsing
-            filtered_messages.append(msg)
-        elif not start_time_str and not end_time_str:
-            filtered_messages.append(msg)
-    
-    # If we have specific time filtering needs that aren't met by the simple approach,
-    # return all messages (the UI should handle proper filtering)
-    return filtered_messages if filtered_messages else messages
-
-def clean_summary_text(summary):
-    """Clean and format structured summary text following memory specifications"""
-    if not summary:
-        return ""
-    
-    # If it's an error message or quota message, return it as-is
-    if any(keyword in summary.lower() for keyword in ['error', 'unavailable', 'quota', 'limits']):
-        return summary
-    
-    # Handle structured format with sections
-    if "**ACTIVITY OVERVIEW**" in summary or "**MAIN DISCUSSION TOPICS**" in summary:
-        # Clean up the structured format but preserve the sections
-        lines = summary.split('\n')
-        cleaned_lines = []
-        for line in lines:
-            line = line.strip()
-            if line:
-                # Skip system message references
-                if any(term in line.lower() for term in ['media omitted', 'security code', 'tap to learn']):
-                    continue
-                # Remove escape characters and clean formatting
-                line = line.replace('\\n', '\n').replace('\\t', ' ').replace(r'\[', '[').replace(r'\]', ']')
-                line = re.sub(r'\\(.)', r'\1', line)  # Remove backslashes before special characters
-                cleaned_lines.append(line)
-        return '\n'.join(cleaned_lines)
-    
-    # Handle bullet point format (fallback)
-    lines = summary.split('\n')
-    cleaned_lines = []
-    
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-            
-        # Skip lines that mention system messages
-        if any(term in line.lower() for term in ['media omitted', 'security code', 'tap to learn', 'changed security', 'message deleted']):
-            continue
-        
-        # Remove escape characters and clean formatting
-        line = line.replace('\\n', '\n').replace('\\t', ' ').replace(r'\[', '[').replace(r'\]', ']')
-        line = re.sub(r'\\(.)', r'\1', line)  # Remove backslashes before special characters
-        
-        # Process bullet points
-        if line.startswith(('•', '-', '*')) or (len(line) >= 2 and line[0].isdigit() and line[1] == '.'):
-            # Remove bullet character and clean
-            if line[0].isdigit() and line[1] == '.':
-                line = line[2:].lstrip()
-            else:
-                line = line[1:].lstrip()
-            
-            line = re.sub(r'\s+', ' ', line).strip()
-            
-            if line and len(line) > 5:
-                line = line[0].upper() + line[1:] if line else line
-                cleaned_lines.append(f"* {line}")
-        else:
-            # For non-bullet lines, clean and format
-            line = re.sub(r'\s+', ' ', line).strip()
-            if line and len(line) > 5:
-                cleaned_lines.append(f"* {line}")
-    
-    # If no meaningful content found
-    if not cleaned_lines:
-        return "**MAIN DISCUSSION TOPICS**: Mostly media sharing and brief exchanges during this week"
-    
-    return '\n'.join(cleaned_lines)
 
 def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
-    """Generate comprehensive weekly summaries with detailed discussion points for filtered date range"""
+    """Generate weekly summaries"""
     if not messages:
         return []
     
-<<<<<<< HEAD
-=======
-    # Limit message count to prevent memory issues (more aggressive limit)
-    max_messages = 250  # Reduced from 300 for better memory management
-    if len(messages) > max_messages:
-        messages = messages[:max_messages]
-        print(f"Limited messages to {len(messages)} for memory management")
+    # Group messages by week
+    weekly_messages = {}
     
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-    # Parse start and end dates if provided
-    start_date = None
-    end_date = None
-    if start_date_str:
-<<<<<<< HEAD
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-    if end_date_str:
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-        end_date = end_date.replace(hour=23, minute=59, second=59)
-=======
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-            print(f"Parsed start date: {start_date}")
-        except ValueError as e:
-            print(f"Error parsing start date {start_date_str}: {e}")
-    if end_date_str:
-        try:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-            end_date = end_date.replace(hour=23, minute=59, second=59)
-            print(f"Parsed end date: {end_date}")
-        except ValueError as e:
-            print(f"Error parsing end date {end_date_str}: {e}")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-    
-    # Filter messages by the provided date range first
-    filtered_messages = []
     for msg in messages:
-        msg_date = parse_timestamp(msg['timestamp'])
-        if msg_date is None:
+        try:
+            timestamp = parse_timestamp(msg['timestamp'])
+            if timestamp:
+                # Get the Monday of the week as the key
+                monday = timestamp - timedelta(days=timestamp.weekday())
+                week_key = monday.strftime('%Y-%m-%d')
+                
+                if week_key not in weekly_messages:
+                    weekly_messages[week_key] = []
+                weekly_messages[week_key].append(msg)
+        except Exception as e:
+            logger.warning(f"Error parsing timestamp: {e}")
             continue
-        if start_date and msg_date < start_date:
-            continue
-        if end_date and msg_date > end_date:
-            continue
-        filtered_messages.append(msg)
     
-<<<<<<< HEAD
-=======
-    print(f"Filtered messages: {len(filtered_messages)}")
-    
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-    # If start_date or end_date is not provided, determine from messages
-    if not start_date or not end_date:
-        message_dates = [parse_timestamp(msg['timestamp']) for msg in filtered_messages]
-        # Filter out None values
-        message_dates = [date for date in message_dates if date is not None]
-        if message_dates:
-            if not start_date:
-                start_date = min(message_dates)
-            if not end_date:
-                end_date = max(message_dates)
-        else:
-            # No valid dates found
-<<<<<<< HEAD
-=======
-            print("No valid dates found in messages")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-            return []
-    
-    # Generate all weeks in the date range
-    weeks = {}
-    
-    # Start from the Monday of the week containing start_date
-    current_week_start = start_date - timedelta(days=start_date.weekday())
-    
-    # Continue until we've covered the week containing end_date
-    while current_week_start <= end_date:
-        week_key = current_week_start.strftime('%Y-%m-%d')
-        weeks[week_key] = []
-        current_week_start += timedelta(days=7)
-    
-    # Assign messages to their respective weeks
-    for msg in filtered_messages:
-        dt = parse_timestamp(msg['timestamp'])
-        if not dt:
-            continue
-            
-        monday = dt - timedelta(days=dt.weekday())
-        week_key = monday.strftime('%Y-%m-%d')
-        if week_key in weeks:
-            weeks[week_key].append(msg)
-    
-<<<<<<< HEAD
-=======
-    print(f"Generated {len(weeks)} weeks")
-    
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
+    # Generate summary for each week
     weekly_summaries = []
-
-    # Process all weeks in the date range
-    for week_key in sorted(weeks.keys()):
-        week_messages = weeks[week_key]
-        
-        # Basic statistics for this week
-        total_messages = len(week_messages)
-        users = set(msg['sender'] for msg in week_messages)
-        user_count = len(users)
-        
-        # User activity analysis
-        user_msg_count = {}
-        for msg in week_messages:
-            user = msg['sender']
-            user_msg_count[user] = user_msg_count.get(user, 0) + 1
-        
-        # Sort users by activity
-        sorted_users = sorted(user_msg_count.items(), key=lambda x: x[1], reverse=True)
-        most_active_user = sorted_users[0] if sorted_users else None
-        
-        monday = datetime.strptime(week_key, '%Y-%m-%d')
-        sunday = monday + timedelta(days=6)
-        date_range = f"{monday.strftime('%d %b %Y')} to {sunday.strftime('%d %b %Y')}" 
-
-        if total_messages == 0:
-            # No messages in this week
-            summary = "**ACTIVITY OVERVIEW**: No messages during this week\n**MAIN DISCUSSION TOPICS**: No conversations recorded"
-        else:
-            # Limit the chat text to prevent API timeouts and token limits
-<<<<<<< HEAD
-            week_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in week_messages[:200]])  # Limit to 200 messages
-=======
-            week_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in week_messages[:150]])  # Reduced from 200 for better memory management
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-
-            try:
-                # Enhanced prompt to extract EXACT conversation content and quotes
-                exact_content_prompt = f"""Analyze this week's WhatsApp conversation and create a detailed summary showing EXACTLY what was discussed with actual quotes and specific content.
-
-**CRITICAL INSTRUCTIONS**:
-1. Show ACTUAL messages, file names, and specific content shared
-2. Include exact quotes in original language (Hindi/Marathi/English)
-3. Mention specific documents, files, or links shared by name
-4. Show real conversation content from ALL participants, not just the most active user
-5. Include messages from different people - distribute topics across various participants
-6. For Social Dynamics, describe what ALL people said to each other
-7. Include specific advice, instructions, or information shared by anyone
-8. DO NOT focus only on the most active user - show diversity of participants
-9. DO NOT generalize - show the actual conversation content from everyone
-10. For short periods (few messages), provide even MORE detail about each message
-
-**REQUIRED STRUCTURE**:
-**ACTIVITY OVERVIEW**: {total_messages} messages from {user_count} participants during this week
-
-**KEY PARTICIPANTS**: [Most active member and their specific contributions with actual quotes]
-
-**MAIN DISCUSSION TOPICS** (Show actual conversation topics from ALL participants, not just the most active - dynamically based on content diversity):
-- Topic 1: [Any participant]: "[Actual quote from message]"
-- Topic 2: [Different participant]: "[Exact message content in original language]"
-- [Continue adding topics dynamically based on content variety and participant diversity]
-
-**IMPORTANT EVENTS**: [Actual announcements, documents shared, or decisions made with exact content]
-
-**COMMUNICATION PATTERNS**: [When specific conversations happened with timestamps]
-
-**ACTION ITEMS**: [Exact instructions or tasks mentioned in messages with who mentioned them]
-
-**SOCIAL DYNAMICS**: [What ALL participants said to each other - include quotes from different people]
-
-**SPECIFIC CONTENT SHARED**: [List any files, links, or resources mentioned with exact names]
-
-**QUESTIONS & ANSWERS**: [Show actual questions asked and any responses provided]
-
-Week's conversation content:
-{week_text}"""
-                
-                response = generate_with_gemini(exact_content_prompt)
-                
-                # Check if API quota exceeded or error occurred
-                if response == "QUOTA_EXCEEDED":
-<<<<<<< HEAD
-                    summary = generate_fallback_summary(week_messages)
-                elif response == "API_ERROR":
-                    # Use fallback when API is unavailable
-=======
-                    print("Gemini API quota exceeded, using fallback summary")
-                    summary = generate_fallback_summary(week_messages)
-                elif response == "API_ERROR":
-                    # Use fallback when API is unavailable
-                    print("Gemini API error, using fallback summary")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-                    summary = generate_fallback_summary(week_messages)
-                else:
-                    summary = response
-                    # Clean the summary text
-                    summary = clean_summary_text(summary)
-
-            except Exception as e:
-                # Even if there's an error, we should still include this week in the results
-                # Use fallback summary
-<<<<<<< HEAD
-=======
-                print(f"Error generating AI summary: {e}")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-                try:
-                    summary = generate_fallback_summary(week_messages)
-                except Exception as fallback_error:
-                    summary = f"Error generating summary: {str(e)}. Fallback error: {str(fallback_error)}"
-        
+    for week_start, week_messages in sorted(weekly_messages.items()):
+        week_end = (datetime.strptime(week_start, '%Y-%m-%d') + timedelta(days=6)).strftime('%Y-%m-%d')
+        summary = generate_total_summary(week_messages)
         weekly_summaries.append({
-            'week_start': week_key,
-            'date_range': date_range,
-            'summary': summary,
-            'message_count': total_messages,
-            'participant_count': user_count,
-            'most_active_user': most_active_user[0] if most_active_user else None
+            'week_start': week_start,
+            'week_end': week_end,
+            'message_count': len(week_messages),
+            'summary': summary
         })
     
-<<<<<<< HEAD
-=======
-    print(f"Generated {len(weekly_summaries)} weekly summaries")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     return weekly_summaries
 
-
-def generate_daily_user_messages(messages):
-    """Generate day-by-day user messages with short summaries"""
-    if not messages:
-        return []
-    
-    # Group messages by date
-
-    daily_messages = {}
-    for msg in messages:
-        dt = parse_timestamp(msg['timestamp'])
-        if not dt:
-            continue
-        date_key = dt.strftime('%Y-%m-%d')
-        if date_key not in daily_messages:
-            daily_messages[date_key] = []
-        daily_messages[date_key].append(msg)
-    
-    daily_summaries = []
-    for date_key, day_messages in sorted(daily_messages.items()):
-        # Create short summary for the day
-        day_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in day_messages])
-        
-        try:
-            prompt = "Generate a very brief daily summary in 1-2 bullet points. Focus only on key topics or events discussed that day. Each bullet point must start with '*' and be concise. Use **bold** for important terms, *italic* for emphasis, and <span style='color:red'>red text</span> for critical information.\n\n" + day_text
-            response = generate_with_gemini(prompt)
-            
-            # Check if API quota exceeded or error occurred
-            if response == "QUOTA_EXCEEDED":
-                summary = generate_fallback_summary(day_messages)
-            elif response == "API_ERROR":
-                summary = "Summary temporarily unavailable due to technical issues."
-            else:
-                summary = response
-                summary = clean_summary_text(summary)
-        except Exception as e:
-            summary = f"Error generating summary: {str(e)}"
-        
-        # Format date nicely
-        date_obj = datetime.strptime(date_key, '%Y-%m-%d')
-        formatted_date = date_obj.strftime('%d %b %Y')
-        
-        daily_summaries.append({
-            'date': date_key,
-            'formatted_date': formatted_date,
-            'summary': summary,
-            'message_count': len(day_messages),
-            'messages': day_messages
-        })
-    
-    return daily_summaries
-
-def generate_user_wise_detailed_report(messages, user):
-    """Generate detailed user-wise report with date and time for each message"""
-    if not messages or not user:
-        return []
-    
-    user_messages = []
-    for msg in messages:
-        if msg['sender'] == user:
-            dt = parse_timestamp(msg['timestamp'])
-            if dt:
-                formatted_datetime = dt.strftime('%d %b %Y, %I:%M %p')
-                date_only = dt.strftime('%d %b %Y')
-                time_only = dt.strftime('%I:%M %p')
-            else:
-                formatted_datetime = msg['timestamp']
-                date_only = msg['timestamp'].split(',')[0] if ',' in msg['timestamp'] else msg['timestamp']
-                time_only = msg['timestamp'].split(',')[1].strip() if ',' in msg['timestamp'] else ""
-            
-            user_messages.append({
-                'datetime': formatted_datetime,
-                'date': date_only,
-                'time': time_only,
-                'message': msg['message']
-            })
-    
-    return user_messages
-
-
-def generate_comprehensive_summary(messages, start_date_str=None, end_date_str=None):
-    """Generate a comprehensive summary combining multiple analysis types"""
-    if not messages:
-        return {
-            'brief_summary': "No messages found in the selected date range.",
-            'weekly_summaries': []
-        }
-    
-    # Generate brief summary
-    brief_summary = generate_brief_summary(messages)
-    
-    # Generate weekly summaries
-    weekly_summaries = generate_weekly_summary(messages, start_date_str, end_date_str)
-    
-    return {
-        'brief_summary': brief_summary,
-        'weekly_summaries': weekly_summaries
-    }
-
-def calculate_date_range(messages):
-    """Calculate the number of days between first and last message"""
-    if not messages:
-        return 0
-    
-    dates = []
-    for msg in messages:
-        dt = parse_timestamp(msg['timestamp'])
-        if dt:
-            dates.append(dt.date())
-    
-    if len(dates) < 2:
-        return 1
-    
-    return (max(dates) - min(dates)).days + 1
-
-# Generate brief summary
 def generate_brief_summary(messages):
     """Generate a comprehensive brief summary with actionable insights for decision making"""
     if not messages:
         return "No messages found in the selected date range."
-<<<<<<< HEAD
-=======
     
     print(f"Generating brief summary for {len(messages)} messages")
     
@@ -894,7 +283,6 @@ def generate_brief_summary(messages):
     if len(messages) > max_messages:
         messages = messages[:max_messages]
         print(f"Limited messages to {len(messages)} for memory management")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
     # Basic statistics for enhanced insights
     total_messages = len(messages)
@@ -955,11 +343,7 @@ def generate_brief_summary(messages):
             meetings.append(f"{sender}: {original_text}")
             
         # Check for decision keywords
-<<<<<<< HEAD
-        if any(keyword in message_text for keyword in ['decided', 'decision', 'concluded', 'final', 'agreed']):
-=======
         if any(keyword in message_text for keyword in ['decided', 'decision', 'final', 'agreed']):
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             decisions.append(f"{sender}: {original_text}")
             
         # Check for action items
@@ -1063,37 +447,219 @@ Conversation content:
 {chat_text}"""
 
         response = generate_with_gemini(comprehensive_prompt)
-<<<<<<< HEAD
-=======
         print(f"AI response received: {response[:100]}...")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-
+        
         # Check if API quota exceeded or error occurred
         if response == "QUOTA_EXCEEDED":
             # Enhanced fallback summary with actual content for brief summary
-<<<<<<< HEAD
-=======
             print("Gemini API quota exceeded, using fallback summary")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
 
         elif response == "API_ERROR":
             # Use fallback summary when API is unavailable
-<<<<<<< HEAD
-=======
-            print("Gemini API error, using fallback summary")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
-        else:
-            # Clean the response to follow formatting preferences
-            return response
-
+            
+        return response
+        
     except Exception as e:
-        # Even if there's an exception, provide a fallback summary
-<<<<<<< HEAD
-=======
-        print(f"Error generating AI brief summary: {e}")
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
+        logger.error(f"Error in generate_brief_summary: {e}")
+        # Fallback to structured summary when AI fails
+        return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
+
+def generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range):
+    """Generate a fallback brief summary when AI is unavailable"""
+    summary_parts = []
+    
+    # Overview
+    summary_parts.append(f"📊 **CONVERSATION OVERVIEW**")
+    summary_parts.append(f"Total Messages: {total_messages} from {user_count} participants over {date_range} days")
+    summary_parts.append("")
+    
+    # Key Participants
+    if most_active_user:
+        summary_parts.append(f"👥 **KEY PARTICIPANTS**")
+        summary_parts.append(f"Most Active: {most_active_user[0]} with {most_active_user[1]} messages")
+        summary_parts.append("")
+    
+    # Activity Patterns
+    summary_parts.append(f"⏰ **ACTIVITY PATTERNS**")
+    summary_parts.append(f"Peak Activity: {peak_hour if peak_hour is not None else 'N/A'}:00 hours on {peak_day if peak_day else 'N/A'}")
+    summary_parts.append("")
+    
+    # Main Discussion Topics
+    summary_parts.append(f"💬 **MAIN DISCUSSION TOPICS**")
+    if messages:
+        # Show first few messages as examples
+        for i, msg in enumerate(messages[:5]):
+            summary_parts.append(f"- {msg['sender']}: {msg['message'][:100]}{'...' if len(msg['message']) > 100 else ''}")
+    summary_parts.append("")
+    
+    # Important Resources
+    summary_parts.append(f"📁 **IMPORTANT RESOURCES**")
+    summary_parts.append(f"Files Shared: {len(file_shares)} | Links Shared: {len(links)}")
+    summary_parts.append("")
+    
+    # Actionable Insights
+    summary_parts.append(f"✅ **ACTIONABLE INSIGHTS**")
+    summary_parts.append(f"Decisions Made: {len(decisions)} | Action Items: {len(action_items)} | Meetings Planned: {len(meetings)}")
+    
+    return "\n".join(summary_parts)
+
+def generate_daily_user_messages(messages):
+    """Generate daily summaries grouped by user"""
+    if not messages:
+        return []
+    
+    # Group messages by date and user
+    daily_user_messages = {}
+    
+    for msg in messages:
+        try:
+            timestamp = parse_timestamp(msg['timestamp'])
+            if timestamp:
+                date_key = timestamp.strftime('%Y-%m-%d')
+                user = msg['sender']
+                
+                if date_key not in daily_user_messages:
+                    daily_user_messages[date_key] = {}
+                
+                if user not in daily_user_messages[date_key]:
+                    daily_user_messages[date_key][user] = []
+                
+                daily_user_messages[date_key][user].append(msg)
+        except Exception as e:
+            logger.warning(f"Error parsing timestamp: {e}")
+            continue
+    
+    # Generate summary for each day
+    daily_summaries = []
+    for date, user_messages in sorted(daily_user_messages.items()):
+        summary_parts = [f"**{date}**"]
+        for user, messages in user_messages.items():
+            summary_parts.append(f"- {user}: {len(messages)} messages")
+        
+        daily_summaries.append({
+            'date': date,
+            'message_count': sum(len(msgs) for msgs in user_messages.values()),
+            'summary': "\n".join(summary_parts)
+        })
+    
+    return daily_summaries
+
+def generate_user_wise_detailed_report(messages, user):
+    """Generate a detailed report for a specific user"""
+    if not messages:
+        return []
+    
+    user_messages = [msg for msg in messages if msg['sender'] == user]
+    
+    if not user_messages:
+        return f"No messages found for user {user}."
+    
+    # Group messages by date
+    daily_messages = {}
+    for msg in user_messages:
+        try:
+            timestamp = parse_timestamp(msg['timestamp'])
+            if timestamp:
+                date_key = timestamp.strftime('%Y-%m-%d')
+                if date_key not in daily_messages:
+                    daily_messages[date_key] = []
+                daily_messages[date_key].append(msg)
+        except Exception as e:
+            logger.warning(f"Error parsing timestamp: {e}")
+            continue
+    
+    # Generate report
+    report_parts = [f"**Detailed Report for {user}**"]
+    report_parts.append(f"Total messages: {len(user_messages)}")
+    report_parts.append("")
+    
+    for date, messages in sorted(daily_messages.items()):
+        report_parts.append(f"**{date}** ({len(messages)} messages):")
+        for msg in messages:
+            report_parts.append(f"- {msg['message']}")
+        report_parts.append("")
+    
+    return "\n".join(report_parts)
+
+def generate_comprehensive_summary(messages, start_date_str=None, end_date_str=None):
+    """Generate a comprehensive summary combining multiple analysis types"""
+    if not messages:
+        return {
+            'brief_summary': "No messages found in the selected date range.",
+            'weekly_summaries': []
+        }
+    
+    # Generate brief summary
+    brief_summary = generate_brief_summary(messages)
+    
+    # Generate weekly summaries
+    weekly_summaries = generate_weekly_summary(messages, start_date_str, end_date_str)
+    
+    return {
+        'brief_summary': brief_summary,
+        'weekly_summaries': weekly_summaries
+    }
+
+def calculate_date_range(messages):
+    """Calculate the number of days between first and last message"""
+    if not messages:
+        return 0
+    
+    dates = []
+    for msg in messages:
+        dt = parse_timestamp(msg['timestamp'])
+        if dt:
+            dates.append(dt.date())
+    
+    if len(dates) < 2:
+        return 1
+    
+    return (max(dates) - min(dates)).days + 1
+
+def generate_with_gemini(prompt):
+    """Generate content using Google Gemini API with better error handling"""
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return "API_ERROR"
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(GEMINI_API_URL, headers=headers, params={"key": api_key}, json=data, timeout=30)
+        response.raise_for_status()
+
+        result = response.json()
+        if 'candidates' in result and len(result['candidates']) > 0:
+            return result['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return "API_ERROR"
+
+    except requests.exceptions.Timeout:
+        return "API_ERROR"
+    except requests.exceptions.RequestException as e:
+        # Check if it's a quota exceeded error
+        if "429" in str(e) or "quota" in str(e).lower():
+            return "QUOTA_EXCEEDED"
+        return "API_ERROR"
+    except KeyError as e:
+        return "API_ERROR"
+    except Exception as e:
+        return "API_ERROR"
+
         return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
 
 def generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages=None, questions=None, announcements=None, technical_discussions=None, date_range=None):
@@ -1243,11 +809,7 @@ def generate_fallback_brief_summary(total_messages, user_count, most_active_user
     if is_short_period:
         if total_messages < 5:
             recommendations.append("Consider encouraging more group participation")
-<<<<<<< HEAD
-        if questions and not any('answer' in str(messages).lower() for msg in messages):
-=======
         if questions and messages and not any('answer' in str(messages).lower() for msg in messages):
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             recommendations.append("Follow up on unanswered questions")
         if announcements:
             recommendations.append("Review and act on recent announcements")

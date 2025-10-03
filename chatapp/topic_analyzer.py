@@ -1,34 +1,45 @@
-from collections import Counter
 import re
+from typing import List, Dict, Any
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-import numpy as np
-from datetime import datetime
-from .config import TOPIC_MIN_WORD_LENGTH, TOPIC_MAX_TOPICS
 
-def extract_topics(messages, top_n=5):
-    # Check if messages list is empty
+# Constants for topic analysis
+TOPIC_MIN_WORD_LENGTH = 3
+TOPIC_MAX_TOPICS = 5
+
+def extract_topics(messages: List[Dict[str, Any]], top_n: int = 5) -> List[Dict[str, Any]]:
+    """
+    Extract topics from messages using TF-IDF and LDA
+    
+    Args:
+        messages: List of message dictionaries with 'message' and 'sender' keys
+        top_n: Number of top topics to return
+        
+    Returns:
+        List of topic dictionaries with topic words, method, score, and examples
+    """
     if not messages:
         return []
     
-    # Validate that messages have timestamps and content
+    # Validate messages and filter out system messages
     valid_messages = []
     for msg in messages:
-        if not msg.get('timestamp') or not msg.get('message'):
-            continue
-        valid_messages.append(msg)
+        text = msg.get('message', '').strip()
+        # Skip system messages and media
+        if text and not any(skip in text.lower() for skip in [
+            'media omitted', 'security code', 'tap to learn', 
+            'this message was deleted', 'messages and calls are end-to-end encrypted'
+        ]):
+            valid_messages.append(msg)
     
     # If no valid messages after validation, return empty list
     if not valid_messages:
         return []
     
-<<<<<<< HEAD
-=======
     # Limit messages for memory efficiency on Render
     if len(valid_messages) > 500:
         valid_messages = valid_messages[:500]
     
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     stopwords = set([
         'the', 'is', 'in', 'and', 'to', 'a', 'of', 'for', 'on', 'with', 'at', 'by', 'an', 'be', 
         'this', 'that', 'it', 'as', 'are', 'was', 'from', 'or', 'but', 'not', 'have', 'has', 'had', 
@@ -60,16 +71,8 @@ def extract_topics(messages, top_n=5):
     all_text = ' '.join(processed_messages)
     words = [word for word in all_text.split() if word not in stopwords and len(word) > TOPIC_MIN_WORD_LENGTH]
     
-    # If no words after filtering, return empty list
-    if not words:
-        return []
-    
-<<<<<<< HEAD
-    vectorizer = TfidfVectorizer(max_features=1000, stop_words=list(stopwords))
-=======
     # Reduce max features for memory efficiency
     vectorizer = TfidfVectorizer(max_features=500, stop_words=list(stopwords))
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     tfidf_matrix = vectorizer.fit_transform(processed_messages)
     feature_names = vectorizer.get_feature_names_out()
     
@@ -77,19 +80,6 @@ def extract_topics(messages, top_n=5):
     tfidf_keywords = sorted(zip(feature_names, tfidf_scores), key=lambda x: x[1], reverse=True)
     
     lda_topics = []
-<<<<<<< HEAD
-    if len(processed_messages) > 10:
-        lda = LatentDirichletAllocation(n_components=min(top_n, TOPIC_MAX_TOPICS), random_state=42)
-        lda.fit(tfidf_matrix)
-        
-        for topic_idx, topic in enumerate(lda.components_):
-            top_words = [feature_names[i] for i in topic.argsort()[:-6:-1]]
-            lda_topics.append({
-                'topic_id': topic_idx,
-                'words': top_words,
-                'weight': float(topic.sum())
-            })
-=======
     # Only run LDA if we have enough messages and features
     if len(processed_messages) > 10 and tfidf_matrix.shape[1] > 10:
         # Reduce number of components for memory efficiency
@@ -105,7 +95,6 @@ def extract_topics(messages, top_n=5):
                     'words': top_words,
                     'weight': float(topic.sum())
                 })
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     topics = []
     

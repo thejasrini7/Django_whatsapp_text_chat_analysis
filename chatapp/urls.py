@@ -1,39 +1,24 @@
 from django.urls import path
 from . import views
 
+app_name = 'chatapp'
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('home', views.home, name='home'),
-    path('dashboard', views.dashboard, name='dashboard'),
-    path('react-dashboard', views.react_dashboard, name='react_dashboard'),
-
-    # New Group Events Dashboard (UI + APIs)
-    path('group-events', views.group_events_page, name='group_events_page'),
-    path('api/group_events/analytics/', views.group_events_analytics, name='group_events_analytics'),
-    path('api/group_events/logs/', views.group_events_logs, name='group_events_logs'),
-    path('api/group_dates/', views.get_group_dates, name='get_group_dates'),
-
-    path('groups/', views.get_groups, name='get_groups'),
-    path('upload/', views.upload_file, name='upload_file'),
-    path('delete_file/', views.delete_file, name='delete_file'),
-    path('get_uploaded_files/', views.get_uploaded_files, name='get_uploaded_files'),
-    path('summarize/', views.summarize, name='summarize'),
-    path('study_report/', views.generate_study_report, name='generate_study_report'),
-    path('ask/', views.ask_question, name='ask_question'),
-    path('example-questions/', views.get_example_questions, name='get_example_questions'),
-    path('group_events/', views.group_events, name='group_events'),
-    path('event_details/', views.event_details, name='event_details'),
-    path('sentiment/', views.sentiment, name='sentiment'),
-    path('activity_analysis/', views.activity_analysis, name='activity_analysis'),
-    path('export_data/', views.export_data, name='export_data'),
-    path('debug_groups/', views.debug_groups, name='debug_groups'),
-<<<<<<< HEAD
-    path('health/', views.health_check, name='health_check'),
-=======
-    path('notebook-demo', views.notebook_demo, name='notebook_demo'),
-    path('health/', views.health_check, name='health_check'),
-    path('api/group_upload_date/', views.get_group_upload_date, name='get_group_upload_date'),
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
-    
-    
+    path('', views.home, name='home'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('react-dashboard/', views.react_dashboard, name='react_dashboard'),
+    path('group-events/', views.group_events_page, name='group_events'),
+    path('api/upload/', views.upload_file, name='upload_file'),
+    path('api/delete-file/', views.delete_file, name='delete_file'),
+    path('api/get-uploaded-files/', views.get_uploaded_files, name='get_uploaded_files'),
+    path('api/get-groups/', views.get_groups, name='get_groups'),
+    path('api/get-group-dates/', views.get_group_dates, name='get_group_dates'),
+    path('api/summarize/', views.summarize, name='summarize'),
+    path('api/group-events-analytics/', views.group_events_analytics, name='group_events_analytics'),
+    path('api/group-events-logs/', views.group_events_logs, name='group_events_logs'),
+    path('api/sentiment/', views.sentiment, name='sentiment'),
+    path('api/activity/', views.activity_analysis, name='activity_analysis'),
+    path('api/export/', views.export_data, name='export_data'),
+    path('api/ask/', views.ask_question, name='ask_question'),
+    path('api/get-example-questions/', views.get_example_questions, name='get_example_questions'),
+    path('api/generate-study-report/', views.generate_study_report, name='generate_study_report'),
 ]

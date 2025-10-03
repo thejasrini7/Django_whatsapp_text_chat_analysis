@@ -128,7 +128,6 @@ def get_event_details(events, event_type, start_date=None, end_date=None):
                 continue
             filtered_events.append(event)
         return filtered_events
-
     return event_list
 
 
@@ -139,12 +138,8 @@ def get_top_removers(events, limit=5):
         remover_counts[remover] = remover_counts.get(remover, 0) + 1
 
     sorted_removers = sorted(remover_counts.items(), key=lambda x: x[1], reverse=True)
-<<<<<<< HEAD
-    return sorted_removers[:limit]
-=======
     # Convert tuples to dictionaries for consistency
     return [{'name': name, 'count': count} for name, count in sorted_removers[:limit]]
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 
 # ------------------- New helpers for analytics dashboard -------------------
