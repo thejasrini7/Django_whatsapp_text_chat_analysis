@@ -2,7 +2,10 @@ import os
 import re
 import json
 import csv
+<<<<<<< HEAD
 import os
+=======
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 import requests
 from datetime import datetime, timedelta
 from django.shortcuts import render, redirect
@@ -10,12 +13,33 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.conf import settings
+<<<<<<< HEAD
 from django.core.files.storage import default_storage
 from dotenv import load_dotenv
 from .models import ChatFile
 from .config import GEMINI_API_KEY, MAX_CHARS_FOR_ANALYSIS
 from .utils import parse_timestamp, filter_messages_by_date
 from .business_metrics import calculate_business_metrics
+=======
+from dotenv import load_dotenv
+import google.generativeai as genai
+import logging
+
+from .utils import parse_timestamp, filter_messages_by_date
+from .summary_generator import (
+    generate_total_summary, 
+    generate_user_messages, 
+    get_users_in_messages,
+    generate_user_messages_for_user,
+    generate_weekly_summary,
+    generate_brief_summary,
+    generate_daily_user_messages,
+    generate_user_wise_detailed_report,
+    generate_comprehensive_summary
+)
+from .sentiment_analyzer import analyze_sentiment
+from .topic_analyzer import extract_topics as analyze_topics
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 from .group_event import (
     analyze_group_events,
     get_event_counts,
@@ -29,6 +53,7 @@ from .group_event import (
     compute_top_contributors,
     extract_unique_actors,
 )
+<<<<<<< HEAD
 from .sentiment_analyzer import analyze_sentiment
 from .summary_generator import (
     generate_total_summary, 
@@ -43,6 +68,17 @@ from .summary_generator import (
 )
 from .question_processor import QuestionProcessor
 from .study_report_generator import generate_study_report_html
+=======
+from .export_utils import export_to_json
+from .study_report_generator import generate_study_report_html
+from .sample_data_generator import generate_comprehensive_sample_data
+from .business_metrics import calculate_business_metrics
+from .question_processor import QuestionProcessor
+from .models import ChatFile
+from .config import GEMINI_API_KEY, MAX_CHARS_FOR_ANALYSIS
+
+logger = logging.getLogger(__name__)
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 load_dotenv()
 
@@ -50,6 +86,7 @@ load_dotenv()
 MODEL_NAME = "gemini-1.5-pro"
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_NAME}/generateContent"
 
+<<<<<<< HEAD
 # Health check endpoint for deployment monitoring
 def health_check(request):
     """Health check endpoint for monitoring deployment status"""
@@ -59,6 +96,14 @@ def health_check(request):
         'service': 'WhatsApp Group Analytics',
         'version': '1.0.0'
     })
+=======
+
+def health_check(request):
+    """Simple health check endpoint for Render"""
+    return JsonResponse({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 def generate_fallback_answer(question, messages):
     """Generate a comprehensive fallback answer when AI is unavailable"""
@@ -546,8 +591,13 @@ def dashboard(request):
                 if valid_dates:
                     first_date = min(valid_dates)
                     last_date = max(valid_dates)
+<<<<<<< HEAD
                     context['first_date'] = first_date.strftime('%d / %m / %Y')
                     context['last_date'] = last_date.strftime('%d / %m / %Y')
+=======
+                    context['first_date'] = first_date.strftime('%Y-%m-%d')
+                    context['last_date'] = last_date.strftime('%Y-%m-%d')
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     return render(request, 'chatapp/dashboard.html', context)
 
 def react_dashboard(request):
@@ -566,8 +616,13 @@ def react_dashboard(request):
                 # Filter out None values before finding min/max
                 valid_dates = [date for date in dates if date is not None]
                 if valid_dates:
+<<<<<<< HEAD
                     start_date = min(valid_dates).strftime('%d / %m / %Y')
                     end_date = max(valid_dates).strftime('%d / %m / %Y')
+=======
+                    start_date = min(valid_dates).strftime('%Y-%m-%d')
+                    end_date = max(valid_dates).strftime('%Y-%m-%d')
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
                     context['chat_start_date'] = start_date
                     context['chat_end_date'] = end_date
     return render(request, 'chatapp/react_dashboard.html', context)
@@ -593,8 +648,13 @@ def get_group_dates(request):
     valid_dates = [date for date in dates if date is not None]
     if not valid_dates:
         return JsonResponse({"error": "No valid dates"}, status=400)
+<<<<<<< HEAD
     start_date = min(valid_dates).strftime('%d / %m / %Y')
     end_date = max(valid_dates).strftime('%d / %m / %Y')
+=======
+    start_date = min(valid_dates).strftime('%Y-%m-%d')
+    end_date = max(valid_dates).strftime('%Y-%m-%d')
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     return JsonResponse({"start_date": start_date, "end_date": end_date})
 
 @csrf_exempt
@@ -775,6 +835,30 @@ def get_uploaded_files(request):
         })
     return JsonResponse({"files": files})
 
+<<<<<<< HEAD
+=======
+
+@require_http_methods(["GET"])
+def get_group_upload_date(request):
+    group_name = request.GET.get('group_name')
+    if not group_name:
+        return JsonResponse({"error": "No group name provided"}, status=400)
+    
+    try:
+        # Find the chat file for this group
+        chat_file = ChatFile.objects.filter(group_name=group_name).order_by('-uploaded_at').first()
+        if chat_file:
+            return JsonResponse({
+                "group_name": group_name,
+                "upload_date": chat_file.uploaded_at.strftime('%d-%b-%Y %I:%M %p'),
+                "upload_date_iso": chat_file.uploaded_at.isoformat()
+            })
+        else:
+            return JsonResponse({"error": "Group not found"}, status=404)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 # This function was duplicated and is now removed
 # The correct group_events function is implemented below
 
@@ -783,7 +867,13 @@ def get_uploaded_files(request):
 def summarize(request):
     try:
         data = json.loads(request.body)
+<<<<<<< HEAD
     except json.JSONDecodeError:
+=======
+        print(f"Received summarize request with data: {data}")
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON data: {e}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     
     group_name = data.get('group_name')
@@ -795,6 +885,10 @@ def summarize(request):
     print(f"Summarize request: group_name={group_name}, summary_type={summary_type}, start_date={start_date_str}, end_date={end_date_str}")
     
     if not group_name:
+<<<<<<< HEAD
+=======
+        print("Invalid group name provided")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         return JsonResponse({"error": "Invalid group name"}, status=400)
     
     try:
@@ -816,8 +910,26 @@ def summarize(request):
     try:
         messages = chat_data[group_name]['messages']
         print(f"Found {len(messages)} messages for group {group_name}")
+<<<<<<< HEAD
         filtered_messages = filter_messages_by_date(messages, start_date_str, end_date_str)
         print(f"Filtered to {len(filtered_messages)} messages")
+=======
+        
+        # Limit messages to prevent memory issues on Render (more aggressive limit)
+        max_messages = 300  # Reduced from 500 for better memory management
+        if len(messages) > max_messages:
+            messages = messages[:max_messages]
+            print(f"Limited to {len(messages)} messages to prevent memory issues")
+        
+        filtered_messages = filter_messages_by_date(messages, start_date_str, end_date_str)
+        print(f"Filtered to {len(filtered_messages)} messages")
+        
+        # Further limit filtered messages if still too many
+        max_filtered_messages = 300
+        if len(filtered_messages) > max_filtered_messages:
+            filtered_messages = filtered_messages[:max_filtered_messages]
+            print(f"Further limited to {len(filtered_messages)} filtered messages")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     except Exception as e:
         print(f"Error filtering messages: {e}")
         import traceback
@@ -825,10 +937,18 @@ def summarize(request):
         return JsonResponse({"error": f"Failed to filter messages: {str(e)}"}, status=500)
     
     if not filtered_messages:
+<<<<<<< HEAD
+=======
+        print("No messages found in the selected date range")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         return JsonResponse({"error": "No messages found in the selected date range"}, status=400)
     
     try:
         if summary_type == 'total':
+<<<<<<< HEAD
+=======
+            print("Generating total summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             summary = generate_total_summary(filtered_messages)
             # Ensure we always return a string
             if not isinstance(summary, str):
@@ -836,6 +956,10 @@ def summarize(request):
             return JsonResponse({"summary_type": "total", "summary": summary})
         
         elif summary_type == 'comprehensive':
+<<<<<<< HEAD
+=======
+            print("Generating comprehensive summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             # Generate a comprehensive summary by combining multiple summary types
             brief_summary = generate_brief_summary(filtered_messages)
             weekly_summaries = generate_weekly_summary(filtered_messages, start_date_str, end_date_str)
@@ -848,20 +972,36 @@ def summarize(request):
             return JsonResponse({"summary_type": "comprehensive", "report": comprehensive_report})
         
         elif summary_type == 'user_messages':
+<<<<<<< HEAD
+=======
+            print("Generating user messages")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             user_messages = generate_user_messages(filtered_messages)
             return JsonResponse({"summary_type": "user_messages", "user_messages": user_messages})
         
         elif summary_type == 'user_wise':
+<<<<<<< HEAD
+=======
+            print("Generating user wise summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             users = get_users_in_messages(filtered_messages)
             return JsonResponse({"summary_type": "user_wise", "users": users})
         
         elif summary_type == 'user_messages_for_user':
+<<<<<<< HEAD
+=======
+            print("Generating user messages for specific user")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             if not user:
                 return JsonResponse({"error": "No user specified"}, status=400)
             user_messages = generate_user_messages_for_user(filtered_messages, user)
             return JsonResponse({"summary_type": "user_messages_for_user", "user": user, "user_messages": user_messages})
         
         elif summary_type == 'weekly_summary':
+<<<<<<< HEAD
+=======
+            print("Generating weekly summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             weekly_summaries = generate_weekly_summary(filtered_messages, start_date_str, end_date_str)
             # Ensure each summary is a string
             for week in weekly_summaries:
@@ -870,6 +1010,10 @@ def summarize(request):
             return JsonResponse({"summary_type": "weekly_summary", "weekly_summaries": weekly_summaries})
         
         elif summary_type == 'brief':
+<<<<<<< HEAD
+=======
+            print("Generating brief summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             print(f"Generating brief summary for {len(filtered_messages)} messages")
             summary = generate_brief_summary(filtered_messages)
             print(f"Generated brief summary: {summary[:100]}...")
@@ -879,6 +1023,10 @@ def summarize(request):
             return JsonResponse({"summary_type": "brief", "summary": summary})
         
         elif summary_type == 'daily_user_messages':
+<<<<<<< HEAD
+=======
+            print("Generating daily user messages")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             daily_summaries = generate_daily_user_messages(filtered_messages)
             # Ensure each summary is a string
             for day in daily_summaries:
@@ -887,12 +1035,20 @@ def summarize(request):
             return JsonResponse({"summary_type": "daily_user_messages", "daily_summaries": daily_summaries})
         
         elif summary_type == 'user_wise_detailed':
+<<<<<<< HEAD
+=======
+            print("Generating user wise detailed report")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             if not user:
                 return JsonResponse({"error": "No user specified"}, status=400)
             user_messages = generate_user_wise_detailed_report(filtered_messages, user)
             return JsonResponse({"summary_type": "user_wise_detailed", "user": user, "user_messages": user_messages})
         
         else:
+<<<<<<< HEAD
+=======
+            print(f"Invalid summary type: {summary_type}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return JsonResponse({"error": "Invalid summary type"}, status=400)
     except Exception as e:
         # Log the error for debugging
@@ -1283,8 +1439,11 @@ def group_events(request):
     events = analyze_group_events(filtered_messages)
     event_counts = get_event_counts(events)
     top_removers = get_top_removers(events)
+<<<<<<< HEAD
     # Convert tuple format to dictionary format for frontend
     top_removers = [{'user': user, 'count': count} for user, count in top_removers]
+=======
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     # Get detailed lists for each event type
     added_list = get_detailed_event_list(events, 'added')
@@ -1665,7 +1824,31 @@ def get_detailed_event_list(events, event_type):
     detailed_list.sort(key=lambda x: x['timestamp'], reverse=True)
     return detailed_list
 
+<<<<<<< HEAD
 
+=======
+def get_top_removers(events):
+    """Get top users who removed others"""
+    # Use the events dictionary directly (imported from group_event.py)
+    removed_events = events.get('removed', [])
+    remover_counts = {}
+    
+    for event in removed_events:
+        remover = event.get('remover', 'Unknown')
+        if remover in remover_counts:
+            remover_counts[remover] += 1
+        else:
+            remover_counts[remover] = 1
+    
+    # Sort by count and return top 5
+    sorted_removers = sorted(remover_counts.items(), key=lambda x: x[1], reverse=True)
+    return [{'user': user, 'count': count} for user, count in sorted_removers[:5]]
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@csrf_exempt
+@require_http_methods(["POST"])
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 def sentiment(request):
     try:
         data = json.loads(request.body)
@@ -1700,6 +1883,7 @@ def sentiment(request):
         
         # Perform sentiment analysis
         print(f"About to call analyze_sentiment with {len(filtered_messages)} messages")
+<<<<<<< HEAD
         result = analyze_sentiment(filtered_messages)
         print(f"Sentiment analysis completed. Result type: {type(result)}")
         print(f"Result keys: {list(result.keys()) if isinstance(result, dict) else 'Not a dict'}")
@@ -1731,6 +1915,40 @@ def sentiment(request):
         result['total_analyzed'] = str(total_count)
         
         return JsonResponse(result)
+=======
+        sentiment_result = analyze_sentiment(filtered_messages)
+        print(f"Sentiment analysis completed. Result type: {type(sentiment_result)}")
+        print(f"Result keys: {list(sentiment_result.keys()) if isinstance(sentiment_result, dict) else 'Not a dict'}")
+        
+        if isinstance(sentiment_result, dict):
+            print(f"Sentiment breakdown: {sentiment_result.get('sentiment_breakdown')}")
+            print(f"Overall sentiment: {sentiment_result.get('overall_sentiment')}")
+        else:
+            print(f"Unexpected result type: {sentiment_result}")
+        
+        # Ensure we have the expected format for frontend
+        if 'sentiment_breakdown' not in sentiment_result or not isinstance(sentiment_result['sentiment_breakdown'], dict):
+            # Use sentiment_breakdown if available and is a dict, otherwise create from overall_sentiment
+            if 'sentiment_breakdown' in sentiment_result and isinstance(sentiment_result['sentiment_breakdown'], dict):
+                pass  # Already correct
+            elif 'overall_sentiment' in sentiment_result and isinstance(sentiment_result['overall_sentiment'], dict):
+                sentiment_result['sentiment_breakdown'] = sentiment_result['overall_sentiment']
+            else:
+                sentiment_result['sentiment_breakdown'] = {'positive': 0, 'neutral': 0, 'negative': 0}
+        
+        # Ensure sentiment_breakdown is a dictionary
+        if 'sentiment_breakdown' not in sentiment_result or not isinstance(sentiment_result['sentiment_breakdown'], dict):
+            if 'overall_sentiment' in sentiment_result and isinstance(sentiment_result['overall_sentiment'], dict):
+                sentiment_result['sentiment_breakdown'] = sentiment_result['overall_sentiment']
+            else:
+                sentiment_result['sentiment_breakdown'] = {'positive': 0, 'neutral': 0, 'negative': 0}
+        
+        # Add total count for frontend display
+        total_count = sum(sentiment_result['sentiment_breakdown'].values())
+        sentiment_result['total_analyzed'] = total_count
+        
+        return JsonResponse(sentiment_result)
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         
     except Exception as e:
         print(f"Error in sentiment analysis: {e}")
@@ -1809,10 +2027,16 @@ def activity_analysis(request):
 
     try:
         # For very large datasets, sample messages to get representative data
+<<<<<<< HEAD
         max_messages = 10000  # Reduced for better performance
         if len(filtered_messages) > max_messages:
             print(f"Large dataset detected ({len(filtered_messages)} messages), sampling {max_messages} messages")
             # Sample messages evenly across the time period to maintain patterns
+=======
+        max_messages = 5000  # Further reduced for better performance and memory management
+        if len(filtered_messages) > max_messages:
+            print(f"Large dataset detected ({len(filtered_messages)} messages), sampling {max_messages} messages")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             step = len(filtered_messages) // max_messages
             filtered_messages = filtered_messages[::step][:max_messages]
         
@@ -1900,7 +2124,15 @@ def activity_analysis(request):
             while current <= end_dt:
                 week_start = current
                 week_end = min(current + timedelta(days=6), end_dt)
+<<<<<<< HEAD
                 week_msgs = [m for m in filtered_messages if parse_timestamp(m['timestamp']) is not None and week_start <= parse_timestamp(m['timestamp']) <= week_end]
+=======
+                # Filter messages for this week from the original messages
+                week_msgs = [m for m in messages if parse_timestamp(m['timestamp']) is not None and week_start.date() <= parse_timestamp(m['timestamp']).date() <= week_end.date()]
+                # Apply user filter if provided
+                if user_filter:
+                    week_msgs = [m for m in week_msgs if m.get('sender') == user_filter]
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
                 week_users = sorted({m.get('sender') for m in week_msgs if m.get('sender')})
                 week_message_counts = {}
                 for m in week_msgs:
@@ -2005,7 +2237,11 @@ def export_data(request):
         events = analyze_group_events(filtered_messages)
         export_data['events'] = {
             'event_counts': get_event_counts(events),
+<<<<<<< HEAD
             'top_removers': [{'user': user, 'count': count} for user, count in get_top_removers(events)]
+=======
+            'top_removers': get_top_removers(events)
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         }
     
     if 'messages' in export_features or 'all' in export_features:
@@ -2064,6 +2300,7 @@ def export_data(request):
         width, height = A4
         y = height - 2*cm
         p.setFont("Helvetica-Bold", 14)
+<<<<<<< HEAD
         p.drawString(2*cm, y, f"Chat Analysis Report: {group_name}")
         y -= 1*cm
         p.setFont("Helvetica", 10)
@@ -2111,6 +2348,47 @@ def debug_groups(request):
             if dates:
                 groups_info[group_name]['first_message_date'] = min(dates).strftime('%Y-%m-%d')
                 groups_info[group_name]['last_message_date'] = max(dates).strftime('%Y-%m-%d')
+=======
+import json
+import os
+import re
+import time
+from datetime import datetime
+
+from django.conf import settings
+from django.http import JsonResponse
+from django.shortcuts import render
+
+from chatapp.models import ChatFile
+
+
+def debug_groups(request):
+    """Debug endpoint to list all groups and their last message date"""
+    try:
+        chat_data = {}
+        groups_info = {}
+
+        chats = Chat.objects.all()
+        for chat in chats:
+            chat_data[chat.group_name] = chat.group_name
+            groups_info[chat.group_name] = {
+                'group_name': chat.group_name,
+                'last_message_date': None,
+            }
+
+        messages = Message.objects.all()
+        for message in messages:
+            group_name = message.chat.group_name
+            if group_name in chat_data:
+                if groups_info[group_name]['last_message_date'] is None:
+                    groups_info[group_name]['last_message_date'] = message.date.strftime('%Y-%m-%d')
+                else:
+                    dates = [
+                        datetime.strptime(groups_info[group_name]['last_message_date'], '%Y-%m-%d'),
+                        message.date
+                    ]
+                    groups_info[group_name]['last_message_date'] = max(dates).strftime('%Y-%m-%d')
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         
         return JsonResponse({
             'available_groups': list(chat_data.keys()),
@@ -2123,3 +2401,24 @@ def debug_groups(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({"error": f"Internal server error: {str(e)}"}, status=500)
+<<<<<<< HEAD
+=======
+
+
+def notebook_demo(request):
+    """Notebook demo page"""
+    return render(request, 'chatapp/notebook_demo.html')
+
+
+def health_check(request):
+    """Simple health check endpoint for Render"""
+    return JsonResponse({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+        'version': '1.0.0',
+        'django_version': '5.2.7',
+        'python_version': '3.11',
+        'gemini_api': settings.GEMINI_API_KEY is not None,
+        'allowed_hosts': settings.ALLOWED_HOSTS,
+    })
+
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8

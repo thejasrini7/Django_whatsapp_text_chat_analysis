@@ -8,10 +8,15 @@ import logging
 from typing import Dict, List, Any
 import time
 from collections import defaultdict
+<<<<<<< HEAD
+=======
+import gc  # Import garbage collector
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 # Configure Gemini AI
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -27,6 +32,27 @@ except Exception as e:
     except Exception as e2:
         logger.error(f"❌ Could not initialize any Gemini model: {e2}")
         model = None
+=======
+# Global model variable
+model = None
+
+# Configure Gemini AI
+if settings.GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        
+        # Initialize the model with correct name
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        print("✅ Successfully initialized gemini-2.0-flash model")
+    except Exception as e:
+        logger.error(f"❌ Could not initialize gemini-2.0-flash: {e}")
+        try:
+            model = genai.GenerativeModel('gemini-flash-latest')
+            print("✅ Fallback: Successfully initialized gemini-flash-latest model")
+        except Exception as e2:
+            logger.error(f"❌ Could not initialize any Gemini model: {e2}")
+            model = None
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 def batch_analyze_sentiment_with_gemini(messages_batch: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
@@ -110,6 +136,7 @@ Ensure valid JSON with all {len(messages_batch)} messages analyzed."""
                 "polarity_score": 0.0
             } for i in range(len(messages_batch))]
             
+<<<<<<< HEAD
     except Exception as e:
         logger.error(f"Gemini API error: {e}")
         
@@ -131,6 +158,14 @@ Ensure valid JSON with all {len(messages_batch)} messages analyzed."""
             })
         
         return fallback_results
+=======
+    finally:
+        # Clear GPU memory if using CUDA
+        if hasattr(genai, 'cuda') and genai.cuda.is_available():
+            genai.cuda.empty_cache()
+        # Force garbage collection
+        gc.collect()
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 def analyze_sentiment(messages):
     if not messages:
@@ -159,10 +194,18 @@ def analyze_sentiment(messages):
             'recommendations': []
         },
         'analysis_metadata': {  # New: Analysis details
+<<<<<<< HEAD
             'total_processed': len(messages),
             'processing_time': None,
             'api_calls_made': 0,
             'fallback_count': 0
+=======
+            'total_processed': 0,
+            'processing_time': None,
+            'api_calls_made': 0,
+            'fallback_count': 0,
+            'memory_optimized': True
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         }
     }
     
@@ -182,7 +225,11 @@ def analyze_sentiment(messages):
         batch_results = batch_analyze_sentiment_with_gemini(batch)
         sentiment_data['analysis_metadata']['api_calls_made'] += 1
         
+<<<<<<< HEAD
         # Process results
+=======
+        # Process results immediately to save memory
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         for j, result in enumerate(batch_results):
             if j >= len(batch):  # Safety check
                 continue
@@ -300,11 +347,19 @@ def analyze_sentiment(messages):
                     sentiment_data['emotional_keywords']['negative'].append(keyword_entry)
         
         # Add a small delay to respect API rate limits
+<<<<<<< HEAD
         time.sleep(0.3)
+=======
+        time.sleep(0.5)  # Increased delay for more conservative rate limiting
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     # Calculate processing time
     processing_time = time.time() - start_time
     sentiment_data['analysis_metadata']['processing_time'] = round(processing_time, 2)
+<<<<<<< HEAD
+=======
+    sentiment_data['analysis_metadata']['total_processed'] = len(messages)
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     # Generate AI insights
     sentiment_data['gemini_insights'] = generate_gemini_insights(sentiment_data)
@@ -511,4 +566,14 @@ def get_emotional_indicators(message, sentiment):
     if sentiment in emoji_indicators:
         indicators.extend([emoji for emoji in emoji_indicators[sentiment] if emoji in message])
     
+<<<<<<< HEAD
     return indicators[:5]  # Return top 5 indicators
+=======
+    return indicators[:5]  # Return top 5 indicators
+
+# Procfile configuration for Render deployment
+print("""
+# Procfile for Render deployment
+web: gunicorn --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 app.wsgi:application --access-logfile -
+""")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8

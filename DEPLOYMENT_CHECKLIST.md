@@ -4,6 +4,7 @@ This checklist ensures all necessary steps are completed for a successful deploy
 
 ## Pre-deployment Checklist
 
+<<<<<<< HEAD
 - [ ] **Code Repository**
   - [ ] All changes committed and pushed to GitHub
   - [ ] No sensitive information (API keys, passwords) in the codebase
@@ -32,6 +33,36 @@ This checklist ensures all necessary steps are completed for a successful deploy
   - [ ] Database migrations ready
   - [ ] SQLite database works for small deployments
   - [ ] PostgreSQL configuration ready for larger deployments
+=======
+- [x] **Code Repository**
+  - [x] All changes committed and pushed to GitHub
+  - [x] No sensitive information (API keys, passwords) in the codebase
+  - [x] .env file is in .gitignore (only .env.example should be committed)
+
+- [x] **Environment Variables**
+  - [x] SECRET_KEY generated and secured
+  - [x] GEMINI_API_KEY obtained from Google AI Studio
+  - [x] DEBUG set to False for production
+
+- [x] **Dependencies**
+  - [x] requirements.txt updated with all necessary packages
+  - [x] No unused or unnecessary dependencies
+
+- [x] **Configuration Files**
+  - [x] render.yaml properly configured
+  - [x] settings_render.py configured for production
+  - [x] wsgi_render.py properly set up
+  - [x] manage_render.py available
+
+- [x] **Static Files**
+  - [x] All static files organized properly
+  - [x] Static files can be collected with `collectstatic`
+
+- [x] **Database**
+  - [x] Database migrations ready
+  - [x] SQLite database works for small deployments
+  - [x] PostgreSQL configuration ready for larger deployments
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 ## Deployment Steps
 
@@ -51,7 +82,11 @@ This checklist ensures all necessary steps are completed for a successful deploy
      - Branch: main (or your preferred branch)
      - Root Directory: whatsapp_django
      - Environment: Python
+<<<<<<< HEAD
      - Build Command: `pip install -r requirements.txt && python manage_render.py collectstatic --noinput && python manage_render.py migrate`
+=======
+     - Build Command: `./build.sh`
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
      - Start Command: `gunicorn myproject.wsgi_render:application`
 
 4. **Add Environment Variables**

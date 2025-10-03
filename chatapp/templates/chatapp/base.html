@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="{% static 'chatapp/styles.css' %}">
+<<<<<<< HEAD
+=======
+  <!-- Notebook CSS -->
+  <link rel="stylesheet" href="{% static 'chatapp/styles/notebook.css' %}">
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
   <style>
     /* Layout for dashboard pages */
     .layout {
@@ -112,6 +117,19 @@
 
   {% block body %}{% endblock %}
 
+<<<<<<< HEAD
+=======
+  <!-- Notebook Panel -->
+  <div id="notebook-panel">
+    <!-- Content will be populated by JavaScript -->
+  </div>
+  
+  <!-- Notebook Toggle Button -->
+  <button id="notebook-toggle" onclick="toggleNotebook()" title="Open Notebook">
+    <i class="fas fa-book"></i>
+  </button>
+
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
   <footer class="site-footer">
     <div class="site-footer__inner">
       <span>© <span id="year"></span> WhatsApp Chat Analyzer</span>
@@ -120,6 +138,11 @@
   </footer>
 
   <script src="{% static 'chatapp/scripts.js' %}"></script>
+<<<<<<< HEAD
+=======
+  <!-- Notebook JavaScript -->
+  <script src="{% static 'chatapp/scripts/notebook.js' %}"></script>
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
   {% block scripts %}{% endblock %}
 </body>
 </html>

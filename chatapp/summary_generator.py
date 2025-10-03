@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timedelta
 import google.generativeai as genai
+<<<<<<< HEAD
 from dotenv import load_dotenv
 import os
 import time
@@ -9,11 +10,20 @@ from django.conf import settings
 from .utils import filter_messages_by_date, parse_timestamp
 
 load_dotenv()
+=======
+from django.conf import settings
+import logging
+from typing import Optional
+import os
+
+from .utils import parse_timestamp
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Global model variable
+<<<<<<< HEAD
 model = None
 
 def initialize_gemini_model():
@@ -44,14 +54,55 @@ def initialize_gemini_model():
                 except Exception as e3:
                     logger.warning(f"Could not initialize gemini-flash-latest, falling back to gemini-pro-latest: {e3}")
                     model = genai.GenerativeModel('gemini-pro-latest')  # type: ignore
+=======
+model: Optional[genai.GenerativeModel] = None
+
+def initialize_gemini_model():
+    """Initialize the Gemini AI model with proper configuration"""
+    global model
+    
+    try:
+        # Get API key from environment or Django settings
+        api_key = os.getenv('GEMINI_API_KEY') or getattr(settings, 'GEMINI_API_KEY', None)
+        
+        if not api_key:
+            logger.warning("GEMINI_API_KEY not found in environment or settings")
+            return False
+        
+        # Configure Gemini AI (simplified configuration without ClientOptions)
+        genai.configure(api_key=api_key)
+        
+        # Initialize the model with fallback
+        try:
+            model = genai.GenerativeModel('gemini-2.5-flash')
+        except Exception as e:
+            logger.warning(f"Could not initialize gemini-2.5-flash, falling back to gemini-2.0-flash: {e}")
+            try:
+                model = genai.GenerativeModel('gemini-2.0-flash')
+            except Exception as e2:
+                logger.warning(f"Could not initialize gemini-2.0-flash, falling back to gemini-flash-latest: {e2}")
+                try:
+                    model = genai.GenerativeModel('gemini-flash-latest')
+                except Exception as e3:
+                    logger.warning(f"Could not initialize gemini-flash-latest, falling back to gemini-pro-latest: {e3}")
+                    model = genai.GenerativeModel('gemini-pro-latest')
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         
         return True
     except Exception as e:
         logger.error(f"Failed to initialize Gemini model: {e}")
         return False
 
+<<<<<<< HEAD
 # Initialize the model when module is loaded
 initialize_gemini_model()
+=======
+# Initialize the model when module is loaded, but don't fail if it doesn't work
+try:
+    initialize_gemini_model()
+except Exception as e:
+    logger.warning(f"Failed to initialize Gemini model on module load: {e}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 def generate_fallback_summary(messages):
     """Generate structured summary with actual message content when AI is unavailable"""
@@ -159,6 +210,7 @@ def generate_with_gemini(prompt):
     """Generate content using Google Gemini AI SDK"""
     global model
     
+<<<<<<< HEAD
     # Check if model is available
     if not model:
         # Try to reinitialize
@@ -166,6 +218,17 @@ def generate_with_gemini(prompt):
             return "API_ERROR"
     
     if not model:
+=======
+    # Check if model is available, try to reinitialize if not
+    if not model:
+        if not initialize_gemini_model():
+            logger.warning("Failed to initialize Gemini model, using fallback")
+            return "API_ERROR"
+    
+    # If still no model, use fallback
+    if not model:
+        logger.warning("No Gemini model available, using fallback")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         return "API_ERROR"
         
     try:
@@ -190,6 +253,14 @@ def generate_total_summary(messages):
     if not messages:
         return "No messages found in the selected date range."
     
+<<<<<<< HEAD
+=======
+    # Limit message count to prevent memory issues (more aggressive limit)
+    max_messages = 200
+    if len(messages) > max_messages:
+        messages = messages[:max_messages]
+    
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     chat_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in messages])
     
     try:
@@ -472,14 +543,38 @@ def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
     if not messages:
         return []
     
+<<<<<<< HEAD
+=======
+    # Limit message count to prevent memory issues (more aggressive limit)
+    max_messages = 250  # Reduced from 300 for better memory management
+    if len(messages) > max_messages:
+        messages = messages[:max_messages]
+        print(f"Limited messages to {len(messages)} for memory management")
+    
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     # Parse start and end dates if provided
     start_date = None
     end_date = None
     if start_date_str:
+<<<<<<< HEAD
         start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     if end_date_str:
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
         end_date = end_date.replace(hour=23, minute=59, second=59)
+=======
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            print(f"Parsed start date: {start_date}")
+        except ValueError as e:
+            print(f"Error parsing start date {start_date_str}: {e}")
+    if end_date_str:
+        try:
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+            end_date = end_date.replace(hour=23, minute=59, second=59)
+            print(f"Parsed end date: {end_date}")
+        except ValueError as e:
+            print(f"Error parsing end date {end_date_str}: {e}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     # Filter messages by the provided date range first
     filtered_messages = []
@@ -493,6 +588,11 @@ def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
             continue
         filtered_messages.append(msg)
     
+<<<<<<< HEAD
+=======
+    print(f"Filtered messages: {len(filtered_messages)}")
+    
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     # If start_date or end_date is not provided, determine from messages
     if not start_date or not end_date:
         message_dates = [parse_timestamp(msg['timestamp']) for msg in filtered_messages]
@@ -505,6 +605,10 @@ def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
                 end_date = max(message_dates)
         else:
             # No valid dates found
+<<<<<<< HEAD
+=======
+            print("No valid dates found in messages")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return []
     
     # Generate all weeks in the date range
@@ -530,6 +634,11 @@ def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
         if week_key in weeks:
             weeks[week_key].append(msg)
     
+<<<<<<< HEAD
+=======
+    print(f"Generated {len(weeks)} weeks")
+    
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     weekly_summaries = []
 
     # Process all weeks in the date range
@@ -560,7 +669,11 @@ def generate_weekly_summary(messages, start_date_str=None, end_date_str=None):
             summary = "**ACTIVITY OVERVIEW**: No messages during this week\n**MAIN DISCUSSION TOPICS**: No conversations recorded"
         else:
             # Limit the chat text to prevent API timeouts and token limits
+<<<<<<< HEAD
             week_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in week_messages[:200]])  # Limit to 200 messages
+=======
+            week_text = "\n".join([f"{msg['sender']}: {msg['message']}" for msg in week_messages[:150]])  # Reduced from 200 for better memory management
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
             try:
                 # Enhanced prompt to extract EXACT conversation content and quotes
@@ -607,9 +720,17 @@ Week's conversation content:
                 
                 # Check if API quota exceeded or error occurred
                 if response == "QUOTA_EXCEEDED":
+<<<<<<< HEAD
                     summary = generate_fallback_summary(week_messages)
                 elif response == "API_ERROR":
                     # Use fallback when API is unavailable
+=======
+                    print("Gemini API quota exceeded, using fallback summary")
+                    summary = generate_fallback_summary(week_messages)
+                elif response == "API_ERROR":
+                    # Use fallback when API is unavailable
+                    print("Gemini API error, using fallback summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
                     summary = generate_fallback_summary(week_messages)
                 else:
                     summary = response
@@ -619,6 +740,10 @@ Week's conversation content:
             except Exception as e:
                 # Even if there's an error, we should still include this week in the results
                 # Use fallback summary
+<<<<<<< HEAD
+=======
+                print(f"Error generating AI summary: {e}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
                 try:
                     summary = generate_fallback_summary(week_messages)
                 except Exception as fallback_error:
@@ -633,6 +758,10 @@ Week's conversation content:
             'most_active_user': most_active_user[0] if most_active_user else None
         })
     
+<<<<<<< HEAD
+=======
+    print(f"Generated {len(weekly_summaries)} weekly summaries")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     return weekly_summaries
 
 
@@ -755,6 +884,17 @@ def generate_brief_summary(messages):
     """Generate a comprehensive brief summary with actionable insights for decision making"""
     if not messages:
         return "No messages found in the selected date range."
+<<<<<<< HEAD
+=======
+    
+    print(f"Generating brief summary for {len(messages)} messages")
+    
+    # Limit message count to prevent memory issues (more aggressive limit)
+    max_messages = 200
+    if len(messages) > max_messages:
+        messages = messages[:max_messages]
+        print(f"Limited messages to {len(messages)} for memory management")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
     # Basic statistics for enhanced insights
     total_messages = len(messages)
@@ -815,7 +955,11 @@ def generate_brief_summary(messages):
             meetings.append(f"{sender}: {original_text}")
             
         # Check for decision keywords
+<<<<<<< HEAD
         if any(keyword in message_text for keyword in ['decided', 'decision', 'concluded', 'final', 'agreed']):
+=======
+        if any(keyword in message_text for keyword in ['decided', 'decision', 'final', 'agreed']):
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             decisions.append(f"{sender}: {original_text}")
             
         # Check for action items
@@ -919,14 +1063,26 @@ Conversation content:
 {chat_text}"""
 
         response = generate_with_gemini(comprehensive_prompt)
+<<<<<<< HEAD
+=======
+        print(f"AI response received: {response[:100]}...")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
         # Check if API quota exceeded or error occurred
         if response == "QUOTA_EXCEEDED":
             # Enhanced fallback summary with actual content for brief summary
+<<<<<<< HEAD
+=======
+            print("Gemini API quota exceeded, using fallback summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
 
         elif response == "API_ERROR":
             # Use fallback summary when API is unavailable
+<<<<<<< HEAD
+=======
+            print("Gemini API error, using fallback summary")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
         else:
             # Clean the response to follow formatting preferences
@@ -934,6 +1090,10 @@ Conversation content:
 
     except Exception as e:
         # Even if there's an exception, provide a fallback summary
+<<<<<<< HEAD
+=======
+        print(f"Error generating AI brief summary: {e}")
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         return generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages, questions, announcements, technical_discussions, date_range)
 
 def generate_fallback_brief_summary(total_messages, user_count, most_active_user, peak_hour, peak_day, file_shares, links, meetings, decisions, action_items, messages=None, questions=None, announcements=None, technical_discussions=None, date_range=None):
@@ -1083,7 +1243,11 @@ def generate_fallback_brief_summary(total_messages, user_count, most_active_user
     if is_short_period:
         if total_messages < 5:
             recommendations.append("Consider encouraging more group participation")
+<<<<<<< HEAD
         if questions and not any('answer' in str(messages).lower() for msg in messages):
+=======
+        if questions and messages and not any('answer' in str(messages).lower() for msg in messages):
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             recommendations.append("Follow up on unanswered questions")
         if announcements:
             recommendations.append("Review and act on recent announcements")

@@ -4673,9 +4673,15 @@
       // Set default dates for all date inputs
       function setDefaultDates() {
         // Set default dates to a range that contains actual chat data (2020-2025)
+<<<<<<< HEAD
         // Use a range that's likely to have data
         const startDate = new Date('2024-06-01'); // Mid-2024 should have data
         const endDate = new Date('2024-12-31');
+=======
+        // Use a range that's likely to have data based on our debug output
+        const startDate = new Date('2023-09-20'); // Start of actual messages
+        const endDate = new Date('2025-09-23');   // End of actual messages
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         const formattedDate = (date) => date.toISOString().split('T')[0];
         
         console.log('Setting default dates:', formattedDate(startDate), 'to', formattedDate(endDate));
@@ -4692,6 +4698,16 @@
         });
       }
 
+<<<<<<< HEAD
+=======
+          }
+        });
+      }
+
+        });
+      }
+
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
       // Initialize sentiment dates with default range (last 30 days)
       function initializeSentimentDates() {
         const today = new Date();
@@ -4750,7 +4766,11 @@
         resultArea.innerHTML = `<div style="white-space: pre-wrap; line-height: 1.6;">${content}</div>`;
       }
 
+<<<<<<< HEAD
       function addToHistory(type, params, status = 'success', results = null) {
+=======
+      async function addToHistory(type, params, status = 'success', results = null) {
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         // Get current date and time for detailed timestamp
         const now = new Date();
         const detailedTimestamp = {
@@ -4769,6 +4789,29 @@
           fileType: 'WhatsApp Chat Export'
         };
         
+<<<<<<< HEAD
+=======
+        // If we have a group, try to get the actual upload date
+        if (currentGroup) {
+          try {
+            const response = await fetch(`/api/group_upload_date/?group_name=${encodeURIComponent(currentGroup)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.upload_date) {
+                fileInfo.uploadDate = {
+                  iso: data.upload_date_iso,
+                  formatted: data.upload_date,
+                  date: new Date(data.upload_date_iso).toLocaleDateString(),
+                  time: new Date(data.upload_date_iso).toLocaleTimeString()
+                };
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to fetch upload date:', error);
+          }
+        }
+        
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         // Extract highlights with more detailed information
         const highlights = {
           mostActiveUser: results?.mostActiveUser || 'N/A',
@@ -4999,7 +5042,11 @@
         });
       }
 
+<<<<<<< HEAD
       async function makeRequest(url, data, timeout = 30000) {
+=======
+      async function makeRequest(url, data, timeout = 60000) {
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         console.log('Making request to:', url, 'with data:', data);
         
         const controller = new AbortController();
@@ -5023,7 +5070,17 @@
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
+<<<<<<< HEAD
         return await response.json();
+=======
+        const responseText = await response.text();
+        try {
+          return JSON.parse(responseText);
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', responseText);
+          throw new Error(`Invalid JSON response from server: ${responseText.substring(0, 100)}...`);
+        }
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
         } catch (error) {
           clearTimeout(timeoutId);
           if (error.name === 'AbortError') {
@@ -5112,7 +5169,11 @@
           const totalParticipants = data.weekly_summaries.reduce((max, week) => Math.max(max, week.participant_count || 0), 0);
           
           document.getElementById('summaryResult').innerHTML = content;
+<<<<<<< HEAD
           addToHistory('Weekly Summary', { 
+=======
+          await addToHistory('Weekly Summary', { 
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             start_date: startDate, 
             end_date: endDate 
           }, 'success', {
@@ -5153,7 +5214,11 @@
           }
           
           showResult('summaryResult', data.summary || 'No summary available.');
+<<<<<<< HEAD
           addToHistory('Brief Summary', { 
+=======
+          await addToHistory('Brief Summary', { 
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
             start_date: startDate, 
             end_date: endDate 
           }, 'success', {

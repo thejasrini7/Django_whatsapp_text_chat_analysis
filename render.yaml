@@ -1,11 +1,19 @@
 services:
   - type: web
+<<<<<<< HEAD
     name: django-whatsapp-text-chat-analysis
+=======
+    name: whatsapp-analytics
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     env: python
     region: oregon
     plan: free
     buildCommand: "./build.sh"
+<<<<<<< HEAD
     startCommand: "gunicorn myproject.wsgi_render:application"
+=======
+    startCommand: "gunicorn -c gunicorn.conf.py myproject.wsgi_render:application"
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

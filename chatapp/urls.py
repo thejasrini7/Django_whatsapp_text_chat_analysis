@@ -27,7 +27,13 @@ urlpatterns = [
     path('activity_analysis/', views.activity_analysis, name='activity_analysis'),
     path('export_data/', views.export_data, name='export_data'),
     path('debug_groups/', views.debug_groups, name='debug_groups'),
+<<<<<<< HEAD
     path('health/', views.health_check, name='health_check'),
+=======
+    path('notebook-demo', views.notebook_demo, name='notebook_demo'),
+    path('health/', views.health_check, name='health_check'),
+    path('api/group_upload_date/', views.get_group_upload_date, name='get_group_upload_date'),
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
     
     
 ]

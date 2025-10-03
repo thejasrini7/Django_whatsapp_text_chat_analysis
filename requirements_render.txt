@@ -2,11 +2,9 @@ Django>=5.2.7
 python-dotenv>=1.1.1
 whitenoise>=6.11.0
 requests>=2.32.5
-<<<<<<< HEAD
 google-generativeai>=0.8.5
-=======
-google-generativeai>=0.8.5
+gunicorn>=23.0.0
+psycopg2-binary>=2.9.10
 scikit-learn>=1.5.0
 numpy>=1.24.0
 scipy>=1.10.0
->>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8

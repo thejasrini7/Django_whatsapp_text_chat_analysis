@@ -1,0 +1,15 @@
+.git
+.gitignore
+README.md
+.env
+*.log
+*.pot
+*.pyc
+__pycache__/
+db.sqlite3
+.DS_Store
+/media/
+/static/
+/staticfiles/
+/node_modules/
+*.sqlite3

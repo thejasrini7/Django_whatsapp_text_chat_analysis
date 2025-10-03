@@ -4,7 +4,11 @@
 echo "Starting build process..."
 
 # Install dependencies
+<<<<<<< HEAD
 pip install -r requirements.txt
+=======
+pip install -r requirements_render.txt
+>>>>>>> 49340df8744b6570747d6bd4d9b58a8af76954d8
 
 # Create necessary directories
 mkdir -p static staticfiles media
