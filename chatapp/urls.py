@@ -3,7 +3,7 @@ from . import views
 
 app_name = 'chatapp'
 urlpatterns = [
-    path('', views.home, name='home'),
+    path('', views.home, name='home'),  # Root path now goes to home view
     path('test/', views.test_view, name='test_view'),  # Test view for debugging
     path('simple-test/', views.simple_test, name='simple_test'),  # Simple test view
     path('settings-test/', views.settings_test, name='settings_test'),  # Settings test view

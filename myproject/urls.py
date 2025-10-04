@@ -26,9 +26,9 @@ from chatapp.views import health_check
 
 logger = logging.getLogger(__name__)
 
-# Simple root route handler
+# Redirect root to the chatapp home page
 def index(request):
-    return HttpResponse(b"WhatsApp Text Analysis API Ready")
+    return RedirectView.as_view(url='/chatapp/')(request)
 
 # Debug request handler
 def debug_request(request):
@@ -43,7 +43,7 @@ POST: {dict(request.POST)}
     return HttpResponse(b"Debug mode enabled")
 
 urlpatterns = [
-    path('', index, name='home'),  # Handles root path '/'
+    path('', include('chatapp.urls')),  # Include chatapp URLs at root
     path('debug/', debug_request),  # Debug endpoint
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),
