@@ -82,6 +82,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "chatapp.middleware.BadRequestLoggingMiddleware",  # Log 400 errors
 ]
 
 ROOT_URLCONF = "myproject.urls"
@@ -194,3 +195,6 @@ USE_TZ = False  # Simplified timezone handling to save memory
 
 # Add APPEND_SLASH setting explicitly
 APPEND_SLASH = True
+
+# Handle favicon requests to prevent 400 errors
+FAVICON_PATH = os.path.join(STATIC_ROOT, 'favicon.ico')

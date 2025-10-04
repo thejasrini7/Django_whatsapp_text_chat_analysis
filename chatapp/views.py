@@ -59,6 +59,50 @@ def health_check(request):
         'version': '1.0.0'
     })
 
+
+def favicon(request):
+    """Simple favicon handler to prevent 400 errors"""
+    from django.http import HttpResponse
+    # Return a simple empty response for favicon requests
+    return HttpResponse(b'', content_type='image/x-icon')
+
+
+def debug_view(request):
+    """Debug view to help identify the cause of 400 errors"""
+    debug_info = f"""
+    <html>
+    <body>
+        <h1>Debug Information</h1>
+        <p><strong>Request Method:</strong> {request.method}</p>
+        <p><strong>Request Path:</strong> {request.path}</p>
+        <p><strong>Request META:</strong></p>
+        <ul>
+    """
+    
+    for key, value in request.META.items():
+        if key.startswith('HTTP_') or key in ['CONTENT_TYPE', 'CONTENT_LENGTH', 'QUERY_STRING']:
+            debug_info += f"<li><strong>{key}:</strong> {value}</li>"
+    
+    debug_info += """
+        </ul>
+        <p><strong>Headers:</strong></p>
+        <ul>
+    """
+    
+    for header, value in request.headers.items():
+        debug_info += f"<li><strong>{header}:</strong> {value}</li>"
+        
+    debug_info += """
+        </ul>
+        <h2>Server Information</h2>
+        <p><strong>Host:</strong> {request.get_host()}</p>
+        <p><strong>Is Secure:</strong> {request.is_secure()}</p>
+        <p><strong>Build Info:</strong> This is a debug view to help troubleshoot 400 errors</p>
+    </body>
+    </html>
+    """
+    return HttpResponse(debug_info.format(request=request).encode('utf-8'))
+
 def generate_fallback_answer(question, messages):
     """Generate a comprehensive fallback answer when AI is unavailable"""
     if not messages:
@@ -526,12 +570,25 @@ def index(request):
 # New pages for modern UI
 
 def home(request):
-    # Home page with upload + group selection
-    return render(request, 'chatapp/home.html')
+    """
+    Home page with upload + group selection
+    Handles all HTTP methods and provides proper error responses
+    """
+    try:
+        return render(request, 'chatapp/home.html')
+    except Exception as e:
+        # Log the error for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in home view: {str(e)}", exc_info=True)
+        
+        # Return a simple response to avoid 500 errors
+        from django.http import HttpResponse
+        return HttpResponse(b"Welcome to WhatsApp Chat Analyzer", content_type="text/plain")
 
 def test_view(request):
     """Simple test view to check if routing is working"""
-    return HttpResponse("Test view is working!")
+    return HttpResponse(b"Test view is working!")
 
 def dashboard(request):
     # Render the old dashboard with date hints
