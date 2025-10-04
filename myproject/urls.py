@@ -26,10 +26,6 @@ from chatapp.views import health_check
 
 logger = logging.getLogger(__name__)
 
-# Redirect root to the chatapp home page
-def index(request):
-    return RedirectView.as_view(url='/chatapp/')(request)
-
 # Debug request handler
 def debug_request(request):
     logger.error(f"""

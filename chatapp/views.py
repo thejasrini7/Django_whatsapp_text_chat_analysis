@@ -669,6 +669,7 @@ def home(request):
     Handles all HTTP methods and provides proper error responses
     """
     import logging
+    import traceback
     logger = logging.getLogger(__name__)
     
     # Log the request details
@@ -680,12 +681,14 @@ def home(request):
         logger.info(f"Home view rendered successfully: {response.status_code}")
         return response
     except Exception as e:
-        # Log the error for debugging
+        # Log the error for debugging with full traceback
         logger.error(f"Error in home view: {str(e)}", exc_info=True)
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         
-        # Return a simple response to avoid 500 errors
+        # Return a detailed error response to help with debugging
         from django.http import HttpResponse
-        return HttpResponse(b"Welcome to WhatsApp Chat Analyzer", content_type="text/plain")
+        error_message = f"Error loading home page: {str(e)}"
+        return HttpResponse(error_message.encode('utf-8'), content_type="text/plain")
 
 def test_view(request):
     """Simple test view to check if routing is working"""
