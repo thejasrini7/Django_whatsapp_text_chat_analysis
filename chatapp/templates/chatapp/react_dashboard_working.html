@@ -4978,7 +4978,7 @@
         showLoading('summaryResult');
         
         try {
-          const data = await makeRequest('/api/summarize/', {
+          const data = await makeRequest('/summarize/', {
             group_name: currentGroup,
             summary_type: 'weekly_summary',
             start_date: startDate,
@@ -5070,7 +5070,7 @@
         showLoading('summaryResult');
         
         try {
-          const data = await makeRequest('/api/summarize/', {
+          const data = await makeRequest('/summarize/', {
             group_name: currentGroup,
             summary_type: 'brief',
             start_date: startDate,
@@ -5110,7 +5110,7 @@
         showLoading('summaryResult');
         
         try {
-          const data = await makeRequest('/api/summarize/', {
+          const data = await makeRequest('/summarize/', {
             group_name: currentGroup,
             summary_type: 'user_messages',
             start_date: startDate,
@@ -5197,7 +5197,7 @@
 
       async function showUserWiseOptions() {
         try {
-          const data = await makeRequest('/api/summarize/', {
+          const data = await makeRequest('/summarize/', {
             group_name: currentGroup,
             summary_type: 'user_wise',
             start_date: document.getElementById('summaryStartDate').value,
@@ -5236,7 +5236,7 @@
         showLoading('summaryResult');
         
         try {
-          const data = await makeRequest('/api/summarize/', {
+          const data = await makeRequest('/summarize/', {
             group_name: currentGroup,
             summary_type: 'user_wise_detailed',
             user: selectedUser,
@@ -5281,7 +5281,7 @@
         showLoading('questionResult');
         
         try {
-          const data = await makeRequest('/api/ask/', {
+          const data = await makeRequest('/ask/', {
             group_name: currentGroup,
             question: question,
             start_date: startDate,
@@ -5314,7 +5314,7 @@
         showLoading('eventsResult');
         
         try {
-          const data = await makeRequest('/api/group-events-analytics/', {
+          const data = await makeRequest('/group_events/', {
             group_name: currentGroup,
             start_date: startDate,
             end_date: endDate
@@ -5664,7 +5664,7 @@
           
           console.log('Fetching event details for:', { group_name: currentGroup, event_type: eventType, start_date: startDate, end_date: endDate });
           
-          const data = await makeRequest('/api/event-details/', {
+          const data = await makeRequest('/event_details/', {
             group_name: currentGroup,
             event_type: eventType,
             start_date: startDate,
@@ -5778,7 +5778,7 @@
         
         try {
           console.log('📡 Making sentiment analysis request for group:', currentGroup);
-          const data = await makeRequest('/api/sentiment/', {
+          const data = await makeRequest('/sentiment/', {
             group_name: currentGroup,
             start_date: startDate,
             end_date: endDate
@@ -6491,7 +6491,7 @@
         document.getElementById('analysisView').style.display = 'none';
         
         try {
-          const data = await makeRequest('/api/activity/', {
+          const data = await makeRequest('/activity_analysis/', {
             group_name: currentGroup,
             start_date: startDate,
             end_date: endDate

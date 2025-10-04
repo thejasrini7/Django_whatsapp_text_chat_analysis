@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/summarize/', views.summarize, name='summarize'),
     path('api/group-events-analytics/', views.group_events_analytics, name='group_events_analytics'),
     path('api/group-events-logs/', views.group_events_logs, name='group_events_logs'),
+    path('api/event-details/', views.event_details, name='event_details'),
     path('api/sentiment/', views.sentiment, name='sentiment'),
     path('api/activity/', views.activity_analysis, name='activity_analysis'),
     path('api/export/', views.export_data, name='export_data'),
