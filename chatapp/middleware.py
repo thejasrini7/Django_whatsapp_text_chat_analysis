@@ -14,6 +14,17 @@ class BadRequestLoggingMiddleware(MiddlewareMixin):
             logger.warning(
                 f"400 Bad Request: {request.method} {request.get_full_path()} "
                 f"User-Agent: {request.META.get('HTTP_USER_AGENT', 'Unknown')} "
-                f"Referer: {request.META.get('HTTP_REFERER', 'None')}"
+                f"Referer: {request.META.get('HTTP_REFERER', 'None')} "
+                f"Host: {request.META.get('HTTP_HOST', 'Unknown')} "
+                f"Content-Type: {request.META.get('CONTENT_TYPE', 'None')}"
             )
         return response
+    
+    def process_request(self, request):
+        # Log all requests for debugging
+        logger.info(
+            f"Request: {request.method} {request.get_full_path()} "
+            f"Host: {request.META.get('HTTP_HOST', 'Unknown')} "
+            f"User-Agent: {request.META.get('HTTP_USER_AGENT', 'Unknown')[:50]}"
+        )
+        return None

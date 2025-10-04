@@ -14,6 +14,63 @@ from dotenv import load_dotenv
 from .models import ChatFile
 from .config import GEMINI_API_KEY, MAX_CHARS_FOR_ANALYSIS
 from .utils import parse_timestamp, filter_messages_by_date
+
+
+def settings_test(request):
+    """Test view to check Django settings"""
+    import os
+    from django.conf import settings
+    from django.http import JsonResponse
+    
+    settings_info = {
+        'settings_module': os.environ.get('DJANGO_SETTINGS_MODULE', 'Not set'),
+        'debug': settings.DEBUG,
+        'allowed_hosts': settings.ALLOWED_HOSTS,
+        'middleware': settings.MIDDLEWARE,
+        'installed_apps': settings.INSTALLED_APPS,
+    }
+    
+    return JsonResponse(settings_info)
+
+
+def comprehensive_test(request):
+    """Comprehensive test view to check all aspects of Django setup"""
+    import os
+    from django.conf import settings
+    from django.http import JsonResponse
+    
+    # Get request information
+    request_info = {
+        'method': request.method,
+        'path': request.path,
+        'full_path': request.get_full_path(),
+        'host': request.get_host(),
+        'is_secure': request.is_secure(),
+        'meta': dict(request.META),
+    }
+    
+    # Get settings information
+    settings_info = {
+        'settings_module': os.environ.get('DJANGO_SETTINGS_MODULE', 'Not set'),
+        'debug': settings.DEBUG,
+        'allowed_hosts': list(settings.ALLOWED_HOSTS) if hasattr(settings, 'ALLOWED_HOSTS') else 'Not found',
+        'middleware': list(settings.MIDDLEWARE) if hasattr(settings, 'MIDDLEWARE') else 'Not found',
+        'installed_apps': list(settings.INSTALLED_APPS) if hasattr(settings, 'INSTALLED_APPS') else 'Not found',
+    }
+    
+    # Check if host is in allowed hosts
+    host_check = {
+        'request_host': request.get_host(),
+        'is_allowed': request.get_host() in settings.ALLOWED_HOSTS if hasattr(settings, 'ALLOWED_HOSTS') else False,
+    }
+    
+    return JsonResponse({
+        'request_info': request_info,
+        'settings_info': settings_info,
+        'host_check': host_check,
+    })
+
+
 from .business_metrics import calculate_business_metrics
 from .group_event import (
     analyze_group_events,
@@ -60,6 +117,12 @@ def health_check(request):
     })
 
 
+def simple_test(request):
+    """Very simple test view to check if basic Django setup is working"""
+    from django.http import HttpResponse
+    return HttpResponse(b"Simple test view is working!", content_type="text/plain")
+
+
 def favicon(request):
     """Simple favicon handler to prevent 400 errors"""
     from django.http import HttpResponse
@@ -102,6 +165,37 @@ def debug_view(request):
     </html>
     """
     return HttpResponse(debug_info.format(request=request).encode('utf-8'))
+
+
+def debug_detailed_view(request):
+    """Detailed debug view to help identify the cause of 400 errors"""
+    import json
+    from django.http import HttpResponse
+    
+    debug_info = {
+        'request_method': request.method,
+        'request_path': request.path,
+        'request_full_path': request.get_full_path(),
+        'request_headers': dict(request.headers),
+        'request_meta': {},
+        'get_params': dict(request.GET),
+        'post_params': dict(request.POST),
+        'host': request.get_host(),
+        'is_secure': request.is_secure(),
+        'build_info': 'Debug view to help troubleshoot 400 errors'
+    }
+    
+    # Add relevant META information
+    for key, value in request.META.items():
+        if key.startswith('HTTP_') or key in ['CONTENT_TYPE', 'CONTENT_LENGTH', 'QUERY_STRING', 'REMOTE_ADDR']:
+            debug_info['request_meta'][key] = value
+    
+    # Return JSON response
+    return HttpResponse(
+        json.dumps(debug_info, indent=2).encode('utf-8'), 
+        content_type='application/json'
+    )
+
 
 def generate_fallback_answer(question, messages):
     """Generate a comprehensive fallback answer when AI is unavailable"""
@@ -574,12 +668,19 @@ def home(request):
     Home page with upload + group selection
     Handles all HTTP methods and provides proper error responses
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Log the request details
+    logger.info(f"Home view accessed: {request.method} {request.path}")
+    logger.info(f"Request META: {dict(request.META)}")
+    
     try:
-        return render(request, 'chatapp/home.html')
+        response = render(request, 'chatapp/home.html')
+        logger.info(f"Home view rendered successfully: {response.status_code}")
+        return response
     except Exception as e:
         # Log the error for debugging
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Error in home view: {str(e)}", exc_info=True)
         
         # Return a simple response to avoid 500 errors
