@@ -394,7 +394,7 @@
 
       async function refreshFiles(){
         try {
-          const res = await fetch('/get_uploaded_files/', {method:'POST', headers:{'X-CSRFToken': csrfToken()}});
+          const res = await fetch('/api/get-uploaded-files/', {method:'POST', headers:{'X-CSRFToken': csrfToken()}});
           const data = await res.json().catch(()=>({files:[]}));
           const files = data.files || [];
           filesList.innerHTML = '';
@@ -421,7 +421,7 @@
               item.querySelector('.delete-btn').addEventListener('click', async (e)=>{
                 if (confirm('Are you sure you want to delete this file?')) {
                   const id = e.currentTarget.getAttribute('data-id');
-                  await fetch('/delete_file/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken()}, body: JSON.stringify({file_id: id})});
+                  await fetch('/api/delete-file/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken()}, body: JSON.stringify({file_id: id})});
                   refreshFiles();
                   refreshGroups();
                 }
@@ -437,7 +437,7 @@
 
       async function refreshGroups(){
         try {
-          const res = await fetch('/groups/');
+          const res = await fetch('/api/get-groups/');
           const data = await res.json().catch(()=>({groups:[]}));
           const groups = data.groups || [];
           groupSelect.innerHTML = '';
@@ -489,7 +489,7 @@
         uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
         
         try{
-          const res = await fetch('/upload/', { method: 'POST', headers: {'X-CSRFToken': csrfToken()}, body: form});
+          const res = await fetch('/api/upload/', { method: 'POST', headers: {'X-CSRFToken': csrfToken()}, body: form});
           const data = await res.json();
           
           if(data.success){
