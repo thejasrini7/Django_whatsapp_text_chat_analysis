@@ -690,6 +690,32 @@ def home(request):
         error_message = f"Error loading home page: {str(e)}"
         return HttpResponse(error_message.encode('utf-8'), content_type="text/plain")
 
+def test_home_render(request):
+    """Test view to debug home template rendering"""
+    import logging
+    import traceback
+    from django.template.loader import render_to_string
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Test if we can render the template directly
+        logger.info("Testing direct template rendering...")
+        rendered_content = render_to_string('chatapp/home.html')
+        logger.info(f"Direct template rendering successful: {len(rendered_content)} characters")
+        
+        # Test the actual render function
+        logger.info("Testing Django render function...")
+        response = render(request, 'chatapp/home.html')
+        logger.info(f"Django render successful: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Error in test_home_render: {str(e)}", exc_info=True)
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+        # Return detailed error information
+        error_info = f"Error in test_home_render: {str(e)}\n\nTraceback:\n{traceback.format_exc()}"
+        return HttpResponse(error_info.encode('utf-8'), content_type="text/plain")
+
 def test_view(request):
     """Simple test view to check if routing is working"""
     return HttpResponse(b"Test view is working!")
