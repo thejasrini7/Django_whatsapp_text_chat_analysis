@@ -184,10 +184,13 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
+    # CSRF_COOKIE_SECURE = True  # Temporarily disable secure CSRF cookie for debugging
+    # SESSION_COOKIE_SECURE = True  # Temporarily disable secure session cookie for debugging
 
 # Additional memory optimizations for Render
 USE_THOUSAND_SEPARATOR = False
 USE_L10N = False
 USE_TZ = False  # Simplified timezone handling to save memory
+
+# Add APPEND_SLASH setting explicitly
+APPEND_SLASH = True
