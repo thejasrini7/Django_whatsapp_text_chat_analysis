@@ -4057,7 +4057,7 @@
                 </div>
               </div>
             </h3>
-            <button class="btn btn-secondary" id="clearHistory">
+            <button class="btn btn-secondary" id="clearHistory" onclick="clearHistory()">
               <i class="fas fa-trash"></i>
               Clear History
             </button>
@@ -4094,7 +4094,7 @@
     (function() {
       // Global state
       let currentGroup = '';
-      let analysisHistory = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
+      window.analysisHistory = JSON.parse(localStorage.getItem('analysisHistory') || '[]');
       
       let activityData = null;
       let dailyChart = null;
@@ -4573,7 +4573,13 @@
 
       // Initialize History Section
       function initHistorySection() {
-        document.getElementById('clearHistory')?.addEventListener('click', clearHistory);
+        const clearHistoryBtn = document.getElementById('clearHistory');
+        if (clearHistoryBtn) {
+          console.log('Attaching event listener to clear history button');
+          clearHistoryBtn.addEventListener('click', clearHistory);
+        } else {
+          console.log('Clear history button not found');
+        }
         updateHistoryDisplay();
       }
 
@@ -4752,15 +4758,15 @@
             platform: navigator.platform
           }
         };
-        analysisHistory.unshift(entry);
-        if (analysisHistory.length > 50) analysisHistory = analysisHistory.slice(0, 50);
-        localStorage.setItem('analysisHistory', JSON.stringify(analysisHistory));
+        window.analysisHistory.unshift(entry);
+        if (window.analysisHistory.length > 50) window.analysisHistory = window.analysisHistory.slice(0, 50);
+        localStorage.setItem('analysisHistory', JSON.stringify(window.analysisHistory));
         updateHistoryDisplay();
       }
 
       function updateHistoryDisplay() {
         const historyList = document.getElementById('historyList');
-        if (analysisHistory.length === 0) {
+        if (window.analysisHistory.length === 0) {
           historyList.innerHTML = `
             <div class="empty-state">
               <i class="fas fa-clock"></i>
@@ -4771,7 +4777,7 @@
         }
 
         let content = '';
-        analysisHistory.forEach(entry => {
+        window.analysisHistory.forEach(entry => {
           // Use the formatted timestamp if available, otherwise create one
           const displayDate = entry.timestamp?.formatted || 
                              (entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'Unknown');
@@ -4822,9 +4828,6 @@
                   <span class="analysis-date">${displayDate}</span>
                 </div>
                 <div class="history-actions">
-                  <button class="btn btn-sm btn-primary" onclick="viewFullAnalysis(${entry.id})">
-                    <i class="fas fa-eye"></i> View Full Analysis
-                  </button>
                   <button class="btn btn-sm btn-success" onclick="downloadReport(${entry.id})">
                     <i class="fas fa-file-pdf"></i> Export PDF
                   </button>
@@ -4848,9 +4851,7 @@
                     <div class="info-item">
                       <strong>Date Range:</strong> ${fileInfo.dateRange || 'N/A'}
                     </div>
-                    <div class="info-item">
-                      <strong>Participants:</strong> ${highlights.totalParticipants || 0}
-                    </div>
+
                     <div class="info-item">
                       <strong>Messages:</strong> ${highlights.totalMessages || 0}
                     </div>
@@ -4863,57 +4864,11 @@
                   </div>
                 </div>
 
-                <!-- Analysis Information -->
-                <div class="history-section">
-                  <div class="analysis-section-header" onclick="toggleHistorySection(this)">
-                    <h4 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                      <i class="fas fa-info-circle"></i> Analysis Information
-                    </h4>
-                    <i class="fas fa-chevron-down chevron-icon"></i>
-                  </div>
-                  <div class="analysis-section-content" style="display: none;">
-                    <div class="highlights-grid">
-                      <div class="highlight-item">
-                        <i class="fas fa-user"></i>
-                        <span><strong>Most Active:</strong> ${highlights.mostActiveUser || 'N/A'}</span>
-                      </div>
-                      <div class="highlight-item">
-                        <i class="fas fa-heart"></i>
-                        <span><strong>Sentiment:</strong> 
-                          ${highlights.overallSentiment?.positive || 0}% positive, 
-                          ${highlights.overallSentiment?.negative || 0}% negative
-                        </span>
-                      </div>
-                      <div class="highlight-item">
-                        <i class="fas fa-clock"></i>
-                        <span><strong>Peak Time:</strong> ${highlights.peakActiveTime || 'N/A'}</span>
-                      </div>
-                      ${highlights.analysisDuration ? `
-                      <div class="highlight-item">
-                        <i class="fas fa-stopwatch"></i>
-                        <span><strong>Duration:</strong> ${highlights.analysisDuration}</span>
-                      </div>
-                      ` : ''}
-                    </div>
-                  </div>
-                </div>
-
                 <!-- Topics and Events -->
                 ${topicsHtml}
                 ${eventsHtml}
 
-                <!-- Saved Results -->
-                <div class="history-section">
-                  <h4><i class="fas fa-save"></i> Available Data</h4>
-                  <div class="results-grid">
-                    ${savedResults.summary ? '<div class="result-item"><i class="fas fa-file-alt"></i> Summary Report</div>' : ''}
-                    ${savedResults.groupEvents ? '<div class="result-item"><i class="fas fa-calendar-alt"></i> Group Events</div>' : ''}
-                    ${savedResults.sentimentResult ? '<div class="result-item"><i class="fas fa-heart"></i> Sentiment Analysis</div>' : ''}
-                    ${savedResults.activityAnalysis ? '<div class="result-item"><i class="fas fa-chart-line"></i> Activity Analysis</div>' : ''}
-                    ${savedResults.userMessages ? '<div class="result-item"><i class="fas fa-comments"></i> User Messages</div>' : ''}
-                    ${savedResults.detailedAnalysis ? '<div class="result-item"><i class="fas fa-search"></i> Detailed Analysis</div>' : ''}
-                  </div>
-                </div>
+
               </div>
             </div>
           `;
@@ -5288,13 +5243,43 @@
             end_date: endDate
           });
           
-          showResult('questionResult', data.answer || 'No answer received');
-          addToHistory('Ask Questions', { question: question.substring(0, 50) + '...', start_date: 'N/A', end_date: 'N/A' }, 'success', {
-            answer: data.answer
+          // Check if we received a valid response
+          if (!data) {
+            throw new Error('No response received from the server');
+          }
+          
+          // Handle API errors
+          if (data.error) {
+            throw new Error(data.error);
+          }
+          
+          // Handle Gemini API errors
+          let answer = data.answer || data.response || 'No answer received';
+          if (answer === 'API_ERROR') {
+            answer = 'The AI service is currently unavailable. Please try again later or check if the API key is properly configured.';
+          } else if (answer === 'QUOTA_EXCEEDED') {
+            answer = 'The AI service quota has been exceeded. Please try again later.';
+          }
+          
+          showResult('questionResult', answer);
+          
+          // Store question and answer details properly
+          addToHistory('Ask Questions', { 
+            question: question, 
+            start_date: startDate, 
+            end_date: endDate 
+          }, 'success', {
+            question: question,
+            answer: answer,
+            timestamp: new Date().toISOString()
           });
         } catch (error) {
           console.error('Question error:', error);
-          showError('questionResult', 'Failed to get answer. Please try again.');
+          let errorMessage = 'Failed to get answer. Please try again.';
+          if (error.message) {
+            errorMessage = `Error: ${error.message}`;
+          }
+          showError('questionResult', errorMessage);
         }
       }
 
@@ -7201,194 +7186,30 @@
 
       // History Functions
       function clearHistory() {
+        console.log('Clear history function called');
         if (confirm('Are you sure you want to clear your analysis history?')) {
-          analysisHistory = [];
-          localStorage.setItem('analysisHistory', JSON.stringify(analysisHistory));
+          console.log('User confirmed clear history');
+          window.analysisHistory = [];
+          localStorage.setItem('analysisHistory', JSON.stringify(window.analysisHistory));
           updateHistoryDisplay();
-        }
-      }
-
-      function viewFullAnalysis(id) {
-        // Find the analysis entry
-        const entry = analysisHistory.find(item => item.id === id);
-        if (!entry) {
-          alert('Analysis entry not found.');
-          return;
-        }
-        
-        // Show what was searched and the results
-        showSearchDetails(entry);
-      }
-
-      function showSearchDetails(entry) {
-        // Create modal if it doesn't exist
-        let modal = document.getElementById('searchDetailsModal');
-        if (!modal) {
-          modal = document.createElement('div');
-          modal.id = 'searchDetailsModal';
-          modal.className = 'modal';
-          modal.innerHTML = `
-            <div class="modal-content">
-              <div class="modal-header">
-                <h3><i class="fas fa-search"></i> Analysis Details</h3>
-                <button class="modal-close" onclick="closeSearchDetails()">&times;</button>
-              </div>
-              <div class="modal-body">
-                <div id="searchDetailsContent"></div>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(modal);
-        }
-        
-        // Populate content with search details
-        const content = document.getElementById('searchDetailsContent');
-        if (content) {
-          content.innerHTML = generateSearchDetailsContent(entry);
-        }
-        
-        // Show modal
-        modal.style.display = 'flex';
-      }
-
-      function closeSearchDetails() {
-        const modal = document.getElementById('searchDetailsModal');
-        if (modal) {
-          modal.style.display = 'none';
-        }
-      }
-
-      function generateSearchDetailsContent(entry) {
-        // Format timestamp
-        const timestamp = entry.timestamp?.formatted || new Date(entry.timestamp?.iso || entry.timestamp).toLocaleString();
-        
-        // Extract highlights and file info
-        const highlights = entry.highlights || {};
-        const fileInfo = entry.fileInfo || {};
-        const savedResults = entry.savedResults || {};
-        
-        // Format key topics if available
-        let topicsHtml = '';
-        if (highlights.keyTopics && Array.isArray(highlights.keyTopics) && highlights.keyTopics.length > 0) {
-          topicsHtml = `
-            <div style="margin: 1rem 0;">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-hashtag"></i> Key Topics Discussed</h4>
-              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">` +
-                highlights.keyTopics.map(topic => 
-                  `<span style="background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem;">${topic}</span>`
-                ).join('') +
-              `</div>
-            </div>`;
-        }
-        
-        // Format important events if available
-        let eventsHtml = '';
-        if (highlights.importantEvents && Array.isArray(highlights.importantEvents) && highlights.importantEvents.length > 0) {
-          eventsHtml = `
-            <div style="margin: 1rem 0;">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-calendar-check"></i> Important Events</h4>
-              <ul style="margin: 0; padding-left: 1.5rem;">` +
-                highlights.importantEvents.map(event => 
-                  `<li style="margin-bottom: 0.25rem;">${event}</li>`
-                ).join('') +
-              `</ul>
-            </div>`;
-        }
-        
-        // Format available data
-        let dataItems = [];
-        if (savedResults.summary) dataItems.push('Summary Report');
-        if (savedResults.groupEvents) dataItems.push('Group Events');
-        if (savedResults.sentimentResult) dataItems.push('Sentiment Analysis');
-        if (savedResults.activityAnalysis) dataItems.push('Activity Analysis');
-        if (savedResults.userMessages) dataItems.push('User Messages');
-        if (savedResults.detailedAnalysis) dataItems.push('Detailed Analysis');
-        
-        let dataHtml = '';
-        if (dataItems.length > 0) {
-          dataHtml = `
-            <div style="margin: 1rem 0;">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-save"></i> Available Data</h4>
-              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">` +
-                dataItems.map(item => 
-                  `<span style="background: var(--bg-light); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem; border: 1px solid var(--border);">${item}</span>`
-                ).join('') +
-              `</div>
-            </div>`;
-        }
-        
-        // Create expandable analysis information section
-        let analysisInfoHtml = `
-          <div style="margin: 1rem 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
-            <div style="background: var(--bg-light); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleAnalysisSection(this)">
-              <h4 style="color: var(--primary); margin: 0;"><i class="fas fa-info-circle"></i> Analysis Information</h4>
-              <i class="fas fa-chevron-down" style="transition: transform 0.3s ease;"></i>
-            </div>
-            <div style="padding: 1rem; display: none;">
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                <div><strong>Group:</strong> ${fileInfo.fileName || 'Unknown'}</div>
-                <div><strong>Date Range:</strong> ${fileInfo.dateRange || 'N/A'}</div>
-                <div><strong>Participants:</strong> ${highlights.totalParticipants || 0}</div>
-                <div><strong>Messages:</strong> ${highlights.totalMessages || 0}</div>
-                <div><strong>Analysis Type:</strong> ${entry.type}</div>
-                <div><strong>Performed On:</strong> ${timestamp}</div>
-                ${highlights.mostActiveUser ? `<div><strong>Most Active:</strong> ${highlights.mostActiveUser}</div>` : ''}
-                ${highlights.peakActiveTime ? `<div><strong>Peak Time:</strong> ${highlights.peakActiveTime}</div>` : ''}
-                ${highlights.analysisDuration ? `<div><strong>Duration:</strong> ${highlights.analysisDuration}</div>` : ''}
-              </div>
-            </div>
-          </div>`;
-        
-        return `
-          <div style="padding: 1rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
-              <div>
-                <h2 style="margin: 0; color: var(--text-dark);">${entry.type}</h2>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Performed on ${timestamp}</div>
-              </div>
-              <div style="text-align: right;">
-                <div style="font-weight: 600;">${fileInfo.fileName || 'Unknown Group'}</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">${fileInfo.dateRange || 'Full History'}</div>
-              </div>
-            </div>
-            
-            ${analysisInfoHtml}
-            ${topicsHtml}
-            ${eventsHtml}
-            ${dataHtml}
-          </div>
-        `;
-      }
-      
-      function toggleAnalysisSection(header) {
-        const content = header.nextElementSibling;
-        const icon = header.querySelector('i');
-        
-        if (content.style.display === 'none' || content.style.display === '') {
-          content.style.display = 'block';
-          icon.style.transform = 'rotate(180deg)';
         } else {
-          content.style.display = 'none';
-          icon.style.transform = 'rotate(0deg)';
+          console.log('User cancelled clear history');
         }
       }
+
+
+
+
+
+
+
+
       
-      function toggleHistorySection(header) {
-        const content = header.nextElementSibling;
-        const icon = header.querySelector('.chevron-icon');
-        
-        if (content.style.display === 'none' || content.style.display === '') {
-          content.style.display = 'block';
-          icon.classList.add('chevron-rotated');
-        } else {
-          content.style.display = 'none';
-          icon.classList.remove('chevron-rotated');
-        }
-      }
+
 
       function downloadReport(id) {
         // Find the analysis entry
-        const entry = analysisHistory.find(item => item.id === id);
+        const entry = window.analysisHistory.find(item => item.id === id);
         if (!entry) {
           alert('Analysis entry not found.');
           return;
@@ -7414,7 +7235,7 @@
       
       function exportAsJson(id) {
         // Find the analysis entry
-        const entry = analysisHistory.find(item => item.id === id);
+        const entry = window.analysisHistory.find(item => item.id === id);
         if (!entry) {
           alert('Analysis entry not found.');
           return;
@@ -7529,9 +7350,199 @@
 
       function deleteHistoryEntry(id) {
         if (confirm('Are you sure you want to delete this history entry?')) {
-          analysisHistory = analysisHistory.filter(item => item.id !== id);
-          localStorage.setItem('analysisHistory', JSON.stringify(analysisHistory));
+          window.analysisHistory = window.analysisHistory.filter(item => item.id !== id);
+          localStorage.setItem('analysisHistory', JSON.stringify(window.analysisHistory));
           updateHistoryDisplay();
+        }
+      }
+
+      function viewFullAnalysis(id) {
+        // Find the analysis entry
+        const entry = window.analysisHistory.find(item => item.id === id);
+        if (!entry) {
+          alert('Analysis entry not found.');
+          return;
+        }
+        
+        // Show what was searched and the results
+        showSearchDetails(entry);
+      }
+
+      function showSearchDetails(entry) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('searchDetailsModal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'searchDetailsModal';
+          modal.className = 'modal';
+          modal.innerHTML = `
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3><i class="fas fa-search"></i> Analysis Details</h3>
+                <button class="modal-close" onclick="closeSearchDetails()">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div id="searchDetailsContent"></div>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+        
+        // Populate content with search details
+        const content = document.getElementById('searchDetailsContent');
+        if (content) {
+          content.innerHTML = generateSearchDetailsContent(entry);
+        }
+        
+        // Show modal
+        modal.style.display = 'flex';
+      }
+
+      function closeSearchDetails() {
+        const modal = document.getElementById('searchDetailsModal');
+        if (modal) {
+          modal.style.display = 'none';
+        }
+      }
+
+      function generateSearchDetailsContent(entry) {
+        // Format timestamp
+        const timestamp = entry.timestamp?.formatted || new Date(entry.timestamp?.iso || entry.timestamp).toLocaleString();
+        
+        // Extract all data with proper fallbacks
+        const highlights = entry.highlights || {};
+        const fileInfo = entry.fileInfo || {};
+        const savedResults = entry.savedResults || {};
+        const params = entry.params || {};
+        
+        // Add question and answer section for Ask Questions entries
+        let qaHtml = '';
+        if (entry.type === 'Ask Questions' && entry.results.question && entry.results.answer) {
+          const questionDate = entry.results.timestamp ? new Date(entry.results.timestamp).toLocaleString() : timestamp;
+          qaHtml = `
+            <div style="margin: 1rem 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+              <div style="background: var(--primary); color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;"><i class="fas fa-question-circle"></i> Question & Answer</h4>
+                <div style="font-size: 0.9rem;">Asked on ${questionDate}</div>
+              </div>
+              <div style="padding: 1rem; background: var(--bg-light);">
+                <div style="margin-bottom: 1rem;">
+                  <h5 style="color: var(--primary); margin: 0 0 0.5rem 0;"><i class="fas fa-question"></i> Question:</h5>
+                  <div style="padding: 0.75rem; background: white; border-radius: 6px; border-left: 4px solid var(--primary);">${entry.results.question}</div>
+                </div>
+                <div>
+                  <h5 style="color: var(--primary); margin: 0 0 0.5rem 0;"><i class="fas fa-robot"></i> Answer:</h5>
+                  <div style="padding: 0.75rem; background: white; border-radius: 6px; border-left: 4px solid var(--secondary);">${entry.results.answer || 'No answer received'}</div>
+                </div>
+              </div>
+            </div>`;
+        }
+        
+        // Format key topics if available
+        let topicsHtml = '';
+        if (highlights.keyTopics && Array.isArray(highlights.keyTopics) && highlights.keyTopics.length > 0) {
+          topicsHtml = `
+            <div style="margin: 1rem 0;">
+              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-hashtag"></i> Key Topics Discussed</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">` +
+                highlights.keyTopics.map(topic => 
+                  `<span style="background: var(--primary); color: white; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem;">${topic}</span>`
+                ).join('') +
+              `</div>
+            </div>`;
+        }
+        
+        // Format important events if available
+        let eventsHtml = '';
+        if (highlights.importantEvents && Array.isArray(highlights.importantEvents) && highlights.importantEvents.length > 0) {
+          eventsHtml = `
+            <div style="margin: 1rem 0;">
+              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-calendar-check"></i> Important Events</h4>
+              <ul style="margin: 0; padding-left: 1.5rem;">` +
+                highlights.importantEvents.map(event => 
+                  `<li style="margin-bottom: 0.25rem;">${event}</li>`
+                ).join('') +
+              `</ul>
+            </div>`;
+        }
+        
+        // Format available data
+        let dataItems = [];
+        if (savedResults.summary) dataItems.push('Summary Report');
+        if (savedResults.groupEvents) dataItems.push('Group Events');
+        if (savedResults.sentimentResult) dataItems.push('Sentiment Analysis');
+        if (savedResults.activityAnalysis) dataItems.push('Activity Analysis');
+        if (savedResults.userMessages) dataItems.push('User Messages');
+        if (savedResults.detailedAnalysis) dataItems.push('Detailed Analysis');
+        
+        let dataHtml = '';
+        if (dataItems.length > 0) {
+          dataHtml = `
+            <div style="margin: 1rem 0;">
+              <h4 style="color: var(--primary); margin-bottom: 0.5rem;"><i class="fas fa-save"></i> Available Data</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">` +
+                dataItems.map(item => 
+                  `<span style="background: var(--bg-light); padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.85rem; border: 1px solid var(--border);">${item}</span>`
+                ).join('') +
+              `</div>
+            </div>`;
+        }
+        
+        // Create expandable analysis information section
+        let analysisInfoHtml = `
+          <div style="margin: 1rem 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+            <div style="background: var(--bg-light); padding: 1rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleAnalysisSection(this)">
+              <h4 style="color: var(--primary); margin: 0;"><i class="fas fa-info-circle"></i> Analysis Information</h4>
+              <i class="fas fa-chevron-down" style="transition: transform 0.3s ease;"></i>
+            </div>
+            <div style="padding: 1rem; display: none;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div><strong>Group:</strong> ${fileInfo.fileName || 'Unknown'}</div>
+                <div><strong>Date Range:</strong> ${fileInfo.dateRange || 'N/A'}</div>
+                <div><strong>Participants:</strong> ${highlights.totalParticipants || 0}</div>
+                <div><strong>Messages:</strong> ${highlights.totalMessages || 0}</div>
+                <div><strong>Analysis Type:</strong> ${entry.type}</div>
+                <div><strong>Performed On:</strong> ${timestamp}</div>
+                ${highlights.mostActiveUser ? `<div><strong>Most Active:</strong> ${highlights.mostActiveUser}</div>` : ''}
+                ${highlights.peakActiveTime ? `<div><strong>Peak Time:</strong> ${highlights.peakActiveTime}</div>` : ''}
+                ${highlights.analysisDuration ? `<div><strong>Duration:</strong> ${highlights.analysisDuration}</div>` : ''}
+              </div>
+            </div>
+          </div>`;
+        
+        return `
+          <div style="padding: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+              <div>
+                <h2 style="margin: 0; color: var(--text-dark);">${entry.type}</h2>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Performed on ${timestamp}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 600;">${fileInfo.fileName || 'Unknown Group'}</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">${fileInfo.dateRange || 'Full History'}</div>
+              </div>
+            </div>
+            
+            ${qaHtml}
+            ${analysisInfoHtml}
+            ${topicsHtml}
+            ${eventsHtml}
+            ${dataHtml}
+          </div>
+        `;
+      }
+      
+      function toggleAnalysisSection(header) {
+        const content = header.nextElementSibling;
+        const icon = header.querySelector('i');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+          content.style.display = 'block';
+          icon.style.transform = 'rotate(180deg)';
+        } else {
+          content.style.display = 'none';
+          icon.style.transform = 'rotate(0deg)';
         }
       }
 
@@ -8244,8 +8255,11 @@
       window.showSentimentDetails = showSentimentDetails;
       window.closeNegativeModal = closeNegativeModal;
       window.viewFullAnalysis = viewFullAnalysis;
+      window.closeSearchDetails = closeSearchDetails;
       window.downloadReport = downloadReport;
       window.deleteHistoryEntry = deleteHistoryEntry;
+      window.clearHistory = clearHistory;
+      window.askQuestion = askQuestion;
       window.askQuickQuestion = askQuickQuestion;
       window.askPermanentQuestion = askPermanentQuestion;
     })();
