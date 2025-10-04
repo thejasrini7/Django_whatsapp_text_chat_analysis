@@ -198,3 +198,23 @@ APPEND_SLASH = True
 
 # Handle favicon requests to prevent 400 errors
 FAVICON_PATH = os.path.join(STATIC_ROOT, 'favicon.ico')
+
+# ---------------- Error Logging ----------------
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': '/tmp/django_error.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}

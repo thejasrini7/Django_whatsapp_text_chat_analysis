@@ -15,16 +15,37 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+import logging
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from django.http import HttpResponse
 from chatapp.views import health_check
 
+logger = logging.getLogger(__name__)
+
+# Simple root route handler
+def index(request):
+    return HttpResponse(b"WhatsApp Text Analysis API Ready")
+
+# Debug request handler
+def debug_request(request):
+    logger.error(f"""
+REQUEST DATA:
+Method: {request.method}
+Path: {request.path}
+Headers: {dict(request.headers)}
+GET: {dict(request.GET)}
+POST: {dict(request.POST)}
+    """)
+    return HttpResponse(b"Debug mode enabled")
+
 urlpatterns = [
+    path('', index, name='home'),  # Handles root path '/'
+    path('debug/', debug_request),  # Debug endpoint
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico', permanent=True)),
-    path('', include('chatapp.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
