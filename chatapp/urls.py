@@ -4,6 +4,7 @@ from . import views
 app_name = 'chatapp'
 urlpatterns = [
     path('', views.home, name='home'),
+    path('test/', views.test_view, name='test_view'),  # Test view for debugging
     path('dashboard/', views.dashboard, name='dashboard'),
     path('react-dashboard/', views.react_dashboard, name='react_dashboard'),
     path('group-events/', views.group_events_page, name='group_events'),

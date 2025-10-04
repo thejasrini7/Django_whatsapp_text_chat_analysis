@@ -529,6 +529,10 @@ def home(request):
     # Home page with upload + group selection
     return render(request, 'chatapp/home.html')
 
+def test_view(request):
+    """Simple test view to check if routing is working"""
+    return HttpResponse("Test view is working!")
+
 def dashboard(request):
     # Render the old dashboard with date hints
     group = request.GET.get('group', '')
