@@ -909,28 +909,56 @@ def get_groups(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def upload_file(request):
-    if request.method == 'POST':
-        file_obj = request.FILES.get('file')
-        if not file_obj:
-            return JsonResponse({"error": "No file provided"}, status=400)
-        if not file_obj.name.endswith('.txt'):
-            return JsonResponse({"error": "Only .txt files are supported"}, status=400)
-        # Validate filename is not undefined or empty
-        if not file_obj.name or file_obj.name == 'undefined':
-            return JsonResponse({"error": "Invalid file name"}, status=400)
-        group_name = get_group_name_from_file(file_obj.name)
-        chat_file = ChatFile(
-            file=file_obj,
-            original_filename=file_obj.name,
-            group_name=group_name
-        )
-        chat_file.save()
-        return JsonResponse({
-            "success": True,
-            "group_name": group_name,
-            "file_id": chat_file.id
-        })
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"Upload request received. Method: {request.method}")
+        logger.info(f"Files in request: {list(request.FILES.keys())}")
+        logger.info(f"Content type: {request.content_type}")
+        logger.info(f"Request META: {dict(request.META)}")
+        
+        if request.method == 'POST':
+            file_obj = request.FILES.get('file')
+            if not file_obj:
+                logger.error("No file provided in request")
+                return JsonResponse({"error": "No file provided"}, status=400)
+            
+            logger.info(f"File received: {file_obj.name}, size: {file_obj.size}")
+            
+            if not file_obj.name.endswith('.txt'):
+                logger.error(f"Invalid file type: {file_obj.name}")
+                return JsonResponse({"error": "Only .txt files are supported"}, status=400)
+            
+            # Validate filename is not undefined or empty
+            if not file_obj.name or file_obj.name == 'undefined':
+                logger.error(f"Invalid file name: {file_obj.name}")
+                return JsonResponse({"error": "Invalid file name"}, status=400)
+            
+            group_name = get_group_name_from_file(file_obj.name)
+            logger.info(f"Group name derived: {group_name}")
+            
+            chat_file = ChatFile(
+                file=file_obj,
+                original_filename=file_obj.name,
+                group_name=group_name
+            )
+            
+            logger.info("Saving chat file to database...")
+            chat_file.save()
+            logger.info(f"File saved successfully with ID: {chat_file.id}")
+            
+            return JsonResponse({
+                "success": True,
+                "group_name": group_name,
+                "file_id": chat_file.id
+            })
+        
+        logger.error("Invalid request method")
+        return JsonResponse({"error": "Invalid request method"}, status=405)
+    except Exception as e:
+        logger.error(f"Error in upload_file: {str(e)}", exc_info=True)
+        return JsonResponse({"error": f"Upload failed: {str(e)}"}, status=500)
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -953,17 +981,27 @@ def delete_file(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 def get_uploaded_files(request):
-    files = []
-    chat_files = ChatFile.objects.all().order_by('-uploaded_at')
+    import logging
+    logger = logging.getLogger(__name__)
     
-    for chat_file in chat_files:
-        files.append({
-            'id': chat_file.id,
-            'name': chat_file.original_filename,
-            'group_name': chat_file.group_name,
-            'uploaded_at': chat_file.uploaded_at.strftime('%d-%b-%Y %I:%M %p')
-        })
-    return JsonResponse({"files": files})
+    try:
+        files = []
+        chat_files = ChatFile.objects.all().order_by('-uploaded_at')
+        logger.info(f"Found {len(chat_files)} chat files in database")
+        
+        for chat_file in chat_files:
+            files.append({
+                'id': chat_file.id,
+                'name': chat_file.original_filename,
+                'group_name': chat_file.group_name,
+                'uploaded_at': chat_file.uploaded_at.strftime('%d-%b-%Y %I:%M %p')
+            })
+        
+        logger.info(f"Returning {len(files)} files")
+        return JsonResponse({"files": files})
+    except Exception as e:
+        logger.error(f"Error in get_uploaded_files: {str(e)}", exc_info=True)
+        return JsonResponse({"error": f"Failed to retrieve files: {str(e)}"}, status=500)
 
 # This function was duplicated and is now removed
 # The correct group_events function is implemented below
