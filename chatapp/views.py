@@ -720,6 +720,13 @@ def test_view(request):
     """Simple test view to check if routing is working"""
     return HttpResponse(b"Test view is working!")
 
+def test_api(request):
+    """Simple test API endpoint"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Test API endpoint accessed")
+    return JsonResponse({"status": "success", "message": "API is working"})
+
 def dashboard(request):
     # Render the old dashboard with date hints
     group = request.GET.get('group', '')
