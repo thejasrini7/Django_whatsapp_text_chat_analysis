@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: whatsapp-chat-analysis
+    env: python
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "gunicorn myproject.wsgi:application --workers 2 --max-requests 1000 --max-requests-jitter 100 --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.3
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        value: .onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://whatsapp-chat-analysis.onrender.com
